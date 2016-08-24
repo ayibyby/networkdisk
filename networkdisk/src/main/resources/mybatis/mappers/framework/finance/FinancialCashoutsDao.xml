@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.FinancialCashoutsDao">
+    <insert id="add">
+        INSERT INTO t_finance_cashout (sequence_number, uid, amount, balance, payee, bank_name, bank_card_number, security_token, status, is_delete, create_time)
+        VALUES (#{sequenceNumber}, #{uid}, #{amount}, #{balance}, #{payee}, #{bankName}, #{bankCardNumber}, #{securityToken}, #{status}, 0, NOW())
+    </insert>
+    <select id="getLastSequenceNumber" resultType="java.lang.String">
+        SELECT MAX(sequence_number)
+        FROM t_finance_cashout
+        WHERE create_time >= DATE(NOW())
+    </select>
+    <select id="isExists" resultType="boolean">
+        SELECT COUNT(id) > 0 AS is_exists FROM t_finance_cashout WHERE id = #{id}
+    </select>
+    <select id="hasUnfinishedRecode" resultType="java.lang.Boolean">
+        SELECT COUNT(id) > 0 AS is_exists
+        FROM t_finance_cashout
+        WHERE uid = #{uid} AND status IN ('none','pending')
+    </select>
+    <select id="getLastInfo" resultType="cn.rongyiju.framework.model.finance.CashoutLastInfo">
+        SELECT fc.bank_name,
+                fc.bank_card_number,
+                fc.security_token,
+                (SELECT COUNT(id) > 0 AS is_exists FROM t_finance_cashout WHERE uid = #{uid} AND status IN ('none','pending')) AS hasUnfinishedRecode
+        FROM t_finance_cashout AS fc
+        WHERE fc.uid = #{uid}
+        ORDER BY fc.create_time DESC
+        LIMIT 0, 1
+    </select>
+    <select id="search" resultType="cn.rongyiju.framework.model.finance.CashoutSearchResult">
+        SELECT fc.bank_name, fc.bank_card_number, fc.amount, fc.security_token, fc.status, fc.create_time
+        FROM t_finance_cashout AS fc
+        <include refid="searchCondition"/>
+        <include refid="defaultOrderBy"/>
+        LIMIT #{offset}, #{limit}
+    </select>
+    <select id="count" resultType="java.lang.Long">
+        SELECT COUNT(0) FROM t_finance_cashout AS fc
+        <include refid="searchCondition"/>
+    </select>
+
+    <sql id="searchCondition">
+        <trim prefix="WHERE" prefixOverrides="AND|OR" suffixOverrides="AND|OR">
+            AND fc.uid = #{uid}
+            AND fc.status != 'none'
+            AND fc.is_delete = 0
+        </trim>
+    </sql>
+    <sql id="defaultOrderBy">
+        <trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+            <if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+                <foreach collection="sortFieldSet" item="field">
+                    <if test="field.sortType != null and field.sortType.value > 0">
+                        ${field.value} ${field.sortType.direction},
+                    </if>
+                </foreach>
+            </if>
+            fc.create_time DESC
+        </trim>
+    </sql>
+</mapper>

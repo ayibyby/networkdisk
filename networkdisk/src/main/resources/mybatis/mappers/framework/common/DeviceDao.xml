@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.DeviceDao">
+    <insert id="upsert" useGeneratedKeys="true" keyColumn="sno" keyProperty="sno">
+        INSERT INTO t_device (appkey, product_id, version, build, device_id, os, os_version, resolution, device_name,
+        mac, manufacturer, cpu, sdk_version, access, platform, channel, ip, create_time)
+        VALUES (#{appKey}, #{productId}, #{version}, #{build}, #{deviceId}, #{os}, #{osVersion}, #{resolution},
+        #{deviceName}, #{mac}, #{manufacturer}, #{cpu}, #{sdkVersion}, #{access}, #{platform}, #{channel}, #{ip}, #{createTime})
+        ON DUPLICATE KEY UPDATE
+        <trim prefixOverrides="," suffixOverrides=",">
+            version = #{version},
+            build = #{build},
+            os = #{os},
+            os_version = #{osVersion},
+            resolution = #{resolution},
+            device_name = #{deviceName},
+            mac = #{mac},
+            manufacturer = #{manufacturer},
+            cpu = #{cpu},
+            sdk_version = #{sdkVersion},
+            access = #{access},
+            platform = #{platform},
+            channel = #{channel},
+            ip = #{ip},
+        </trim>
+    </insert>
+</mapper>

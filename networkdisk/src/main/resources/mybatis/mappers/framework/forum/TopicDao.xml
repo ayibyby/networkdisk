@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.TopicDao">
+    <resultMap id="topicSearchResultMap" type="TopicSearchResult">
+        <id property="id" column="id"/>
+
+        <result property="uid" column="t_uid"/>
+
+        <!--<association property="favoriteCount" column="{contentType=content_type, contentId=id}" select="cn.rongyiju.framework.dao.FavoriteDao.getFavoriteCount"/>-->
+        <!--<association property="praiseCount" column="{contentType=content_type, contentId=id}" select="cn.rongyiju.framework.dao.PraiseDao.getPraiseCount"/>-->
+        <association property="isFavorited" column="{contentType=content_type, contentId=id, uid=current_uid}" select="cn.rongyiju.framework.dao.FavoriteDao.isFavorited"/>
+        <association property="isPraised" column="{contentType=content_type, contentId=id, uid=current_uid}" select="cn.rongyiju.framework.dao.PraiseDao.isPraised"/>
+        <association property="initiator" column="{uid=t_uid, currentUid=current_uid}" select="cn.rongyiju.framework.dao.UserDao.find"/>
+    </resultMap>
+    <insert id="add" useGeneratedKeys="false">
+        INSERT INTO t_topic (id, uid, type, title, contact, province, city, district, lat, lng, content, status, is_delete, create_time)
+        VALUES (#{id}, #{uid}, #{type}, #{title}, #{contact}, #{province}, #{city}, #{district}, #{lat}, #{lng}, #{content}, #{status}, 0, NOW())
+    </insert>
+
+    <update id="delete">
+        UPDATE t_topic SET is_delete = 1 WHERE id = #{id}
+    </update>
+
+    <update id="modify" parameterType="ModifyTopicArgs">
+        <if test="id > 0">
+            UPDATE t_topic
+            <set>
+                type = #{type},
+                title=#{title},
+                contact=#{contact},
+                province=#{province},
+                city=#{city},
+                district=#{district},
+                lat=#{lat},
+                lng=#{lng},
+                content=#{content}
+            </set>
+            WHERE id = #{id}
+        </if>
+    </update>
+
+    <select id="getTopicCities" resultType="SearchFilterCityItem">
+        SELECT
+            c.`code`, c.`name`, COUNT(c.code) AS `order`
+        FROM
+            t_ad_city AS c
+                INNER JOIN
+            t_topic AS t ON t.city = c.`code`
+        WHERE
+            t.status = 'publish'
+            AND t.is_delete = 0
+        GROUP BY c.`code` , c.`name`
+        ORDER BY `order` DESC
+    </select>
+    <select id="find" resultMap="topicSearchResultMap">
+        SELECT t.id, t.type, t.title, t.contact, t.province, t.city, t.district, t.lat, t.lng, t.content, t.create_time,
+        t.uid AS t_uid, ${currentUid} AS current_uid, 'forum' AS content_type,
+        (SELECT COUNT(p.id) FROM t_praise AS p WHERE content_type = 'forum' AND content_id = t.id) AS praise_count,
+        (SELECT COUNT(f.id) FROM t_favorite AS f WHERE content_type = 'forum' AND content_id = t.id) AS favorite_count,
+        (SELECT COUNT(z.id)>0 FROM t_topic_complain AS z WHERE z.topic_id = t.id AND z.uid = #{currentUid} LIMIT 0, 1) AS is_complained
+         FROM t_topic AS t WHERE id = #{id} AND status = 'publish' AND t.is_delete = 0
+    </select>
+
+    <select id="isExists" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_topic WHERE id = #{id} LIMIT 0, 1
+    </select>
+
+    <select id="search" resultMap="topicSearchResultMap">
+        SELECT t.id, t.type, t.title, t.contact, t.province, t.city, t.district, t.lat, t.lng, t.content, t.create_time,
+        t.uid AS t_uid, ${currentUid} AS current_uid, 'forum' AS content_type,
+        (SELECT COUNT(p.id) FROM t_praise AS p WHERE content_type = 'forum' AND content_id = t.id) AS praise_count,
+        (SELECT COUNT(f.id) FROM t_favorite AS f WHERE content_type = 'forum' AND content_id = t.id) AS favorite_count,
+        (SELECT COUNT(z.id)>0 FROM t_topic_complain AS z WHERE z.topic_id = t.id AND z.uid = #{currentUid} LIMIT 0, 1) AS is_complained
+        <if test="lat != null and lng != null and distance != null and distance > 0">, lat_lng_distance(t.lat, t.lng, #{lat}, #{lng}) AS distance</if>
+        FROM t_topic AS t
+        INNER JOIN t_user AS u ON t.uid = u.id
+        <include refid="searchCondition"/>
+        <if test="lat == null or lng == null or distance == null">
+            <include refid="defaultOrderBy"/>
+        </if>
+        <if test="lat != null and lng != null and distance != null and distance > 0">
+            <include refid="lbsOrderBy"/>
+        </if>
+        LIMIT #{offset}, #{limit}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(DISTINCT t.id)
+        FROM t_topic AS t
+        <include refid="searchCondition"/>
+    </select>
+    <select id="getTodayCount" resultType="long">
+        SELECT COUNT(DISTINCT t.id)
+        FROM t_topic AS t
+        WHERE t.uid = #{currentUid} AND to_days(t.create_time) = to_days(now())
+    </select>
+
+    <sql id="searchCondition">
+        <trim prefix="WHERE" prefixOverrides="AND|OR" suffixOverrides="AND|OR">
+            <if test="type != null and type.value > 0">AND t.type = #{type}</if>
+
+            <if test="province != null">AND (t.province = #{province} OR t.city = #{province} OR t.district = #{province})</if>
+            <if test="city != null">AND (t.province = #{city} OR t.city = #{city} OR t.district = #{city})</if>
+            <if test="district != null">AND (t.province = #{district} OR t.city = #{district} OR t.district = #{district})</if>
+
+            <if test="lat != null and lng != null and distance != null and distance > 0">
+                AND lat_lng_distance(t.lat, t.lng, #{lat}, #{lng}) &lt;= #{distance}
+            </if>
+
+            <if test="keywords != null and !keywords.isEmpty()">
+                AND
+                <foreach item="item" index="index" collection="keywords" open="(" separator=" OR " close=")">
+                    (
+                        t.title LIKE CONCAT('%', #{item}, '%')
+                        OR t.content LIKE CONCAT('%', #{item}, '%')
+                    )
+                </foreach>
+            </if>
+
+            <if test="initiatorUid != null and initiatorUid > 0">AND t.uid = #{initiatorUid}</if>
+
+            AND t.status = 'publish'
+            AND t.is_delete = 0
+        </trim>
+    </sql>
+    <sql id="defaultOrderBy">
+        <trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+            <if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+                <foreach collection="sortFieldSet" item="field">
+                    <if test="field.sortType != null and field.sortType.value > 0">
+                        ${field.value} ${field.sortType.direction},
+                    </if>
+                </foreach>
+            </if>
+            t.create_time DESC
+        </trim>
+    </sql>
+    <sql id="lbsOrderBy">
+        <trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+            distance ASC,
+            <if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+                <foreach collection="sortFieldSet" item="field">
+                    <if test="field.sortType != null and field.sortType.value > 0">
+                        ${field.value} ${field.sortType.direction},
+                    </if>
+                </foreach>
+            </if>
+            t.update_time DESC
+        </trim>
+    </sql>
+</mapper>

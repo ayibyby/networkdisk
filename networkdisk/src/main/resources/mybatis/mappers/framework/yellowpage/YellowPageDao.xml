@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.YellowPageDao">
+    <insert id="add" useGeneratedKeys="false">
+        INSERT INTO t_yellowpage (id, uid, company, company_address, company_contact, company_introduction, industry, province, city, district, status, is_delete, create_time, update_time)
+        VALUES (#{id}, #{currentUid}, #{company}, #{companyAddress}, #{companyContact}, #{companyIntroduction}, #{industry}, #{province}, #{city}, #{district}, status, 0, NOW(), NULL)
+    </insert>
+
+    <update id="delete">
+        UPDATE t_yellowpage SET is_delete = 1 WHERE id = #{id}
+    </update>
+
+    <select id="getYellowPageCities" resultType="SearchFilterCityItem">
+        SELECT
+            c.`code`, c.`name`, COUNT(c.code) AS `order`
+        FROM
+            t_ad_city AS c
+                INNER JOIN
+            t_yellowpage AS y ON y.city = c.`code`
+        WHERE
+            y.status = 'publish'
+            AND y.is_delete = 0
+        GROUP BY c.`code` , c.`name`
+        ORDER BY `order` DESC
+    </select>
+    <select id="find" resultType="YellowPageSearchResult">
+        SELECT *
+        FROM t_yellowpage WHERE id = #{id} AND status = 'publish' AND is_delete = 0
+    </select>
+    <select id="isExists" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_yellowpage WHERE id = #{id} LIMIT 0, 1
+    </select>
+    <select id="isCompanyExists" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_yellowpage WHERE company = #{company} LIMIT 0, 1
+    </select>
+
+    <select id="search" resultType="YellowPageSearchResult">
+        SELECT y.*
+        FROM t_yellowpage AS y
+        <include refid="searchCondition"/>
+        <include refid="defaultOrderBy"/>
+        LIMIT #{offset}, #{limit}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(DISTINCT y.id)
+        FROM t_yellowpage AS y
+        <include refid="searchCondition"/>
+    </select>
+
+    <sql id="searchCondition">
+        <trim prefix="WHERE" prefixOverrides="AND|OR" suffixOverrides="AND|OR">
+            <if test="industry != null">AND y.industry = #{industry}</if>
+
+            <!--<if test="province != null">AND (y.province = #{province} OR y.city = #{province} OR y.district = #{province})</if>-->
+            <if test="city != null">AND (y.province = #{city} OR y.city = #{city} OR y.district = #{city})</if>
+            <!--<if test="district != null">AND (y.province = #{district} OR y.city = #{district} OR y.district = #{district})</if>-->
+
+            <if test="keywords != null and !keywords.isEmpty()">
+                AND
+                <foreach item="item" index="index" collection="keywords" open="(" separator=" OR " close=")">
+                    (
+                    y.company LIKE CONCAT('%', #{item}, '%')
+                    OR y.company_address LIKE CONCAT('%', #{item}, '%')
+                    OR y.company_contact LIKE CONCAT('%', #{item}, '%')
+                    OR y.company_introduction LIKE CONCAT('%', #{item}, '%')
+                    )
+                </foreach>
+            </if>
+
+            AND y.status = 'publish'
+            AND y.is_delete = 0
+        </trim>
+    </sql>
+    <sql id="defaultOrderBy">
+        <trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+            <if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+                <foreach collection="sortFieldSet" item="field">
+                    <if test="field.sortType != null and field.sortType.value > 0">
+                        ${field.value} ${field.sortType.direction},
+                    </if>
+                </foreach>
+            </if>
+            RAND(DAY(NOW())) ASC,
+            y.create_time DESC
+        </trim>
+    </sql>
+</mapper>

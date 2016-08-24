@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.PlatformPartnerRebateDao">
+    <resultMap id="rebateSearchResultMap" type="RebateSearchResult">
+
+    </resultMap>
+
+    <select id="findItemsByPartnerId" resultMap="rebateSearchResultMap">
+        SELECT * FROM t_platform_partner_rebate
+        WHERE partner_id = #{partnerId} AND status = 'publish';
+    </select>
+    <select id="getMaxBrokerage" resultType="java.math.BigDecimal">
+        SELECT
+            IFNULL(MAX(ppr.rebate), 0) AS brokerage
+        FROM
+            t_platform_partner AS pp
+                INNER JOIN
+            t_platform_partner_rebate AS ppr ON ppr.partner_id = pp.id
+                AND ppr.loan_category = #{loanCategory}
+                AND ppr.status = 'publish'
+        WHERE
+            pp.status = 'publish'
+                AND pp.is_delete = 0
+        ;
+    </select>
+    <select id="getMaxFixedBrokerage" resultType="java.math.BigDecimal">
+        SELECT
+            IFNULL(MAX(ppr.rebate), 0) AS brokerage
+        FROM
+            t_platform_partner AS pp
+                INNER JOIN
+            t_platform_partner_rebate AS ppr ON ppr.partner_id = pp.id
+                AND ppr.loan_category = #{loanCategory}
+                AND ppr.rebate_type = 'fixed'
+                AND ppr.status = 'publish'
+        WHERE
+            pp.status = 'publish'
+                AND pp.is_delete = 0
+        ;
+    </select>
+    <select id="getMinBrokerage" resultType="java.math.BigDecimal">
+        SELECT
+            IFNULL(MIN(ppr.rebate), 0) AS brokerage
+        FROM
+            t_platform_partner AS pp
+                INNER JOIN
+            t_platform_partner_rebate AS ppr ON ppr.partner_id = pp.id
+                AND ppr.loan_category = #{loanCategory}
+                AND ppr.status = 'publish'
+        WHERE
+            pp.status = 'publish'
+                AND pp.is_delete = 0
+        ;
+    </select>
+    <select id="find" resultType="cn.rongyiju.framework.model.platform.RebateSearchResult">
+        SELECT * FROM t_platform_partner_rebate
+        WHERE id = #{businessId} AND status = 'publish';
+    </select>
+</mapper>

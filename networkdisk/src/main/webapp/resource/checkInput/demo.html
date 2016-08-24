@@ -1,0 +1,93 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+    	<title>hao</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
+        <script type="text/javascript" src="checkInput.js"></script>
+    </head>
+    <style>
+    	*{outline:none;font-family: "微软雅黑"}
+		input{width:200px;padding:2px 3px;font-size:20px;vertical-align:text-top;}
+		form dt{width:80px;float:left;line-height:30px;text-align:right;}
+		form dt,form dd{padding:5px 3px;}
+		
+		.input_tip{
+			fong-size:18px;
+			height:18px;
+			padding:5px;
+			padding-left:23px;
+			transition: all 0.3s ease 0s;
+	        -webkit-transition: all 0.3s ease 0s;
+		}
+		.focus_input{color:#FF6600;background:url(tip.png) no-repeat 0 6px;}
+		.right_input{color:#009828;background:url(tip.png) no-repeat 0 -20px;}
+		.error_input{color:red;background:url(tip.png) no-repeat 0 -47px;}
+		.ajax_checking_input{color:#009828;background:url(loading.gif) no-repeat 0 8px;}
+		
+    </style>
+    <body>
+    	<form id="ajax" action="#">
+	    	<dl>
+	    		<dt>用户名：</dt><dd><input type="text" name="name"/></dd>
+	    		<dt>密码：</dt><dd><input type="text" name="pwd"/></dd>
+	    		<dt>确认密码：</dt><dd><input type="text" name="pwd1"/></dd>
+	    		<dt>电子邮件：</dt><dd><input type="text" name="email"/></dd>
+	    		<dt>年龄：</dt><dd><input type="text" name="age"/></dd>
+	    		<dt></dt><dd><button type="submit">提交</button></dd>
+	    	</dl>
+       	</form>
+    </body>
+    <script>
+    	dbg = function(text){$("#debug").html(text+"");}
+        var itms = [{ 
+					name:"name",	
+					type:"chn",
+					focusMsg:'中文',	
+					errorMsg:"搞什么飞机", 
+					rightMsg:"填写正确" , 
+					ajax:{
+						url:"/home/ajax",
+						errorMsg:"用户已存在",
+						successMsg:"用户名可以注册！"
+					}
+				},{ 
+					name:"pwd",	
+					type:'eng',
+					focusMsg:'英文',
+					rightMsg:"填写正确",
+				},{ 
+					name:"pwd1",	
+					type:'eq',		
+					focusMsg:'确认密码',	
+					rightMsg:"确认成功",
+					errorMsg:"大于六个字符", 
+					eqto:'pwd'
+				},{ 
+					name:"email",	
+					type:"email",	
+					focusMsg:'常用邮箱',
+					rightMsg:"填写正确"
+				},{ 
+					name:"age",	
+					between:[18,78],
+					focusMsg:'18< >78'
+				}
+			];
+		
+		var rules = {
+			"email"    	: [/^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+((\.[a-zA-Z0-9_-]{2,3}){1,2})$/,"邮箱格式不对"],
+			"username" 	: [/^[#]/,"不能这样写"],
+			"password" 	: [/(lw)$/,"我要发火了"],
+			"eng"	   	: [/^[A-Za-z]+$/,"只能输入英文"],
+			"chn" 		: [/^[\u0391-\uFFE5]+$/,"只能输入汉字"]
+		}
+
+        $("#ajax").checkInput({
+            items:itms,
+            beforeSubmit:function(){
+            	
+        	}
+       	});
+    </script>
+</html>

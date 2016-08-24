@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.PushDeviceTokenDao">
+    <insert id="upsert">
+        INSERT INTO t_push_device_token (uid, os, product_id, version, build, device_id, channel, client_id, token, ip,
+        create_uid, create_time)
+        VALUES (#{uid}, #{os}, #{productId}, #{version}, #{build}, #{deviceId}, #{channel}, #{clientId}, #{token},
+        #{ip}, #{createUid}, #{createTime})
+        ON DUPLICATE KEY UPDATE
+        <trim prefixOverrides="," suffixOverrides=",">
+            os = #{os},
+            product_id = #{productId},
+            version = #{version},
+            build = #{build},
+            device_id = #{deviceId},
+            channel = #{channel},
+            client_id = #{clientId},
+            token = #{token},
+            ip = #{ip},
+            create_uid = #{createUid},
+            create_time = #{createTime},
+        </trim>
+    </insert>
+
+    <update id="cleanClientId">
+        UPDATE t_push_device_token SET client_id = NULL WHERE client_id = #{clientId}
+    </update>
+
+    <update id="clearClientId">
+        UPDATE t_push_device_token SET client_id = NULL WHERE uid = #{uid}
+    </update>
+
+    <select id="find" resultType="PushDeviceToken">
+        SELECT * FROM t_push_device_token
+        WHERE product_id = #{productId} AND channel = #{channel} AND deviceId = #{deviceId} AND token = #{token}
+    </select>
+    <select id="findById" resultType="PushDeviceToken">
+        SELECT * FROM t_push_device_token WHERE id = #{id}
+    </select>
+    <select id="findByUid" resultType="PushDeviceToken">
+        SELECT * FROM t_push_device_token WHERE uid = #{uid}
+    </select>
+</mapper>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.RedPacketDao">
+    <insert id="add" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+        INSERT INTO t_platform_redpacket (id, uid, activity_id, platform_order_id, mobile, amount, status, create_time)
+        VALUES (#{id}, #{uid}, #{activityId}, #{platformOrderId}, #{mobile}, #{amount}, #{status}, NOW());
+    </insert>
+    <update id="update">
+        UPDATE t_platform_redpacket
+        SET amount = #{amount}, status = #{status}
+        WHERE id = #{id}
+    </update>
+    <update id="updateStatus">
+        UPDATE t_platform_redpacket
+        SET status = #{status}
+        WHERE id = #{id}
+    </update>
+    <update id="updateUid">
+        UPDATE t_platform_redpacket
+        SET uid = #{uid}
+        WHERE id = #{id}
+    </update>
+    <select id="getUsers" resultType="cn.rongyiju.framework.model.platform.RedPacketSearchResult">
+        SELECT
+            *
+        FROM
+            t_platform_redpacket
+        WHERE
+            activity_id = #{activityId}
+        ORDER BY create_time DESC , id DESC;
+    </select>
+    <select id="isMobileExists" resultType="java.lang.Boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_platform_redpacket WHERE mobile = #{mobile} AND activity_id = #{activityId} LIMIT 0, 1
+    </select>
+    <select id="isUidExists" resultType="java.lang.Boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_platform_redpacket WHERE uid = #{uid} AND activity_id = #{activityId} LIMIT 0, 1
+    </select>
+    <select id="getTotalExtractTimes" resultType="java.lang.Integer">
+        SELECT COUNT(id) AS times FROM t_platform_redpacket
+        WHERE uid = #{uid} AND status IN ('unclaimed', 'received', 'opened')
+        <if test="activityCategoryId != null and activityCategoryId == 2">AND platform_order_id IS NULL OR platform_order_id = 0</if>
+        <if test="activityCategoryId != null and activityCategoryId == 3">AND platform_order_id > 0</if>
+    </select>
+    <select id="getExtractedTimes" resultType="java.lang.Integer">
+        SELECT COUNT(id) AS times FROM t_platform_redpacket
+        WHERE uid = #{uid} AND status IN ('received', 'opened')
+        <if test="activityCategoryId != null and activityCategoryId == 2">AND platform_order_id IS NULL OR platform_order_id = 0</if>
+        <if test="activityCategoryId != null and activityCategoryId == 3">AND platform_order_id > 0</if>
+    </select>
+    <select id="isExists" resultType="java.lang.Boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_platform_redpacket WHERE id = #{id} LIMIT 0, 1
+    </select>
+    <select id="getRedPacketOrderInfo" resultType="cn.rongyiju.framework.model.platform.RedPacketOrderInfo">
+        SELECT
+            pr.id AS red_packet_id,
+            po.loan_category,
+            po.loan_amount,
+            pop.partner_id,
+            CASE
+                WHEN pop.partner_id = 43608696 THEN 0
+                ELSE pop.partner_id
+            END AS rank
+        FROM
+            t_platform_redpacket AS pr
+                INNER JOIN
+            t_platform_order AS po ON po.id = pr.platform_order_id
+                INNER JOIN
+            t_platform_order_partner AS pop ON pop.order_id = po.id
+        WHERE
+            pr.activity_id = #{activityId}
+            AND pr.uid = #{uid}
+            AND pr.status = 'unclaimed'
+        ORDER BY rank ASC
+        LIMIT 0 , 1
+    </select>
+    <select id="getNotOpenedRedPacket" resultType="cn.rongyiju.framework.model.platform.RedPacket">
+        SELECT
+            *
+        FROM
+            t_platform_redpacket AS pr
+                INNER JOIN
+            t_platform_activity AS pa ON pa.id = pr.activity_id AND pa.category = 2
+        WHERE
+            pr.status = 'received' AND pr.amount > 0
+            AND (pr.platform_order_id IS NULL OR 1 > pr.platform_order_id)
+            AND (pr.uid = #{uid} OR pr.mobile = #{mobile})
+        ORDER BY pr.id DESC
+        LIMIT 0 , 1;
+    </select>
+</mapper>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.UserScoreDao">
+	<insert id="add">
+        INSERT INTO t_user_score_log (uid, reputation_key, content_type, content_id, score, msg)
+        VALUES (#{uid}, #{reputationKey}, #{contentType}, #{contentId}, #{score}, #{msg})
+    </insert>
+
+	<select id="increased" resultType="java.lang.Boolean">
+		SELECT COUNT(id)>0 AS is_exists FROM t_user_score_log
+		WHERE uid = #{currentUid} AND reputation_key = #{reputationKey} AND content_type = #{contentType} AND content_id = #{contentId}
+	</select>
+	<select id="getIncreaseTimesToday" resultType="java.lang.Integer">
+        SELECT COUNT(id) AS total_count FROM t_user_score_log
+        WHERE uid = #{currentUid} AND reputation_key = #{reputationKey} AND DATE(update_time) = DATE(NOW())
+	</select>
+</mapper>

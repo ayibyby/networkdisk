@@ -1,0 +1,30 @@
+.tiny_prompt_box{
+	position: fixed;
+	bottom:2px;
+	right:8px;
+}
+.tiny_prompt_box_head{
+	font-size:14px;
+	height:18px;
+	line-height:18px;
+	padding:5px 3px;
+	width:100%;
+	background:#38A3DB;
+}
+.tiny_prompt_box_content{
+	background:#DDD;
+	padding:3px;
+	width:100%;
+	display:none;
+}
+.tiny_prompt_box_head .option{float:right;padding:0;}
+.tiny_prompt_box_head .option span{
+	display:inline-block;
+	width:15px;
+	height:15px;
+	margin:0 7px 0 0;
+	cursor: pointer;
+}
+.tiny_prompt_box_head .close{background: url(window_option.gif) no-repeat 0 -14px;display:none!important;}
+.tiny_prompt_box_head .min{background: url(window_option.gif) no-repeat 0 0;}
+.tiny_prompt_box_head .max{background: url(window_option.gif) no-repeat 0 -30px;}

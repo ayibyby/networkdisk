@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.PartyGuestDao">
+    <delete id="delete">
+        DELETE FROM t_party_user_relation WHERE id = #{id}
+    </delete>
+    <select id="isApplied" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_party_user_relation WHERE party_id = #{partyId} AND uid = #{guestUid}
+        LIMIT 0, 1
+    </select>
+    <select id="findAllByPartyId" resultType="PartyGuest">
+        SELECT g.party_id, g.uid, g.mobile, g.update_time, u.name, u.nickname, u.avatar, u.avatar_thumbnail, u.gender, u.score
+        FROM t_party_user_relation AS g
+        INNER JOIN t_user AS u ON g.uid = u.id
+        WHERE g.party_id = #{partyId}
+        ORDER BY g.update_time DESC
+    </select>
+    <select id="findOne" resultType="PartyGuest">
+        SELECT g.id, g.party_id, g.uid, g.mobile, g.update_time, u.name, u.nickname, u.avatar, u.avatar_thumbnail, u.gender, u.score
+        FROM t_party_user_relation AS g
+        INNER JOIN t_user AS u ON g.uid = u.id
+        WHERE g.party_id = #{partyId} AND g.uid = #{guestUid}
+        LIMIT 0, 1
+    </select>
+    <select id="getGuestCount" resultType="int">
+        SELECT COUNT(id) guest_count FROM t_party_user_relation WHERE party_id = #{partyId} AND uid > 0
+    </select>
+</mapper>

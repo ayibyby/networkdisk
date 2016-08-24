@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.PlatformPartnerDao">
+    <resultMap id="partnerSearchResultMap" type="PlatformPartnerSearchResult" autoMapping="true">
+        <id property="id" column="id"/>
+
+        <collection property="rebates" column="id" select="cn.rongyiju.framework.dao.PlatformPartnerRebateDao.findItemsByPartnerId"/>
+    </resultMap>
+
+    <select id="find" resultType="cn.rongyiju.framework.model.platform.PlatformPartnerSearchResult">
+        SELECT pp.id, pp.business_trait, pp.business_introduction
+        FROM t_platform_partner AS pp
+        WHERE pp.id = #{partnerId}
+    </select>
+    <select id="search" resultMap="partnerSearchResultMap">
+        SELECT pp.id, pp.business_trait, pp.business_introduction
+        FROM t_platform_partner AS pp
+        <include refid="searchCondition"/>
+        <include refid="defaultOrderBy"/>
+        LIMIT #{offset}, #{limit}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(0) FROM t_platform_partner AS pp
+        <include refid="searchCondition"/>
+    </select>
+
+    <sql id="searchCondition">
+        <trim prefix="WHERE" prefixOverrides="AND|OR" suffixOverrides="AND|OR">
+            pp.status = 'publish'
+        </trim>
+    </sql>
+    <sql id="defaultOrderBy">
+        <trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+            pp.weight DESC,
+            <if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+                <foreach collection="sortFieldSet" item="field">
+                    <if test="field.sortType != null and field.sortType.value > 0">
+                        ${field.value} ${field.sortType.direction},
+                    </if>
+                </foreach>
+            </if>
+            pp.update_time DESC
+        </trim>
+    </sql>
+</mapper>

@@ -1,0 +1,26 @@
+body{font-size:16px;background:#EBEBEB;}
+#right,#dir_tree{background:#FFF;}
+#sky,#user_info,#setting,#other,#netdisk{background-color:#38A3DB;}
+#portrait img {
+	border: 1px #38A3DB solid;
+	background: white;
+}
+#file_path {
+	color:#3975CD;
+	background:#A9D5F4;
+}
+#path_wrap{background:white;}
+#file_path span{border:1px solid white;}
+#root span{padding-left:23px;}
+#tools_bar span,#tools_bar a{border:#C6E4DB solid 1px;color:#3975CD;}
+#tools_bar span:hover,#file_path span:hover,#tools_bar a:hover{
+	box-shadow: 0 1px 3px rgba(200, 200, 200, 0.6);
+	background-color:#EAF4FE;
+	border-color:#4D90FE;
+}
+#download{background:url(../img/download.png) no-repeat 0 center;}
+#folder{border-top:2px solid #38A3DB;}
+#folder .file{border:1px solid #FFF;}
+.file:hover{border-color:#DDD!important;}
+#input_pwd{background: #DDD;}
+#input_pwd h4,#input_pwd h5{color:red;}

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.PhoneContactDao">
+    <insert id="upsert">
+        INSERT INTO t_user_phone_contact (uid, name, mobile, email, addr, update_time)
+        VALUES (#{uid}, #{name}, #{mobile}, #{email}, #{addr}, NOW())
+        ON DUPLICATE KEY UPDATE
+        <trim prefixOverrides="," suffixOverrides=",">
+            email = #{email},
+            addr = #{addr},
+            relation_uid = #{relationUid},
+
+            update_time = NOW()
+        </trim>
+    </insert>
+
+    <select id="checkContacts" resultType="PhoneContactCheckResult">
+        SELECT DISTINCT u.id AS uid, u.mobile, u.name, u.avatar, u.avatar_thumbnail, u.gender, get_user_follow_state(#{uid}, u.id) AS follow_state
+        FROM t_user AS u
+        WHERE u.mobile IN
+        <foreach item="item" index="index" collection="items" open="(" separator="," close=")">
+            #{item.mobile}
+        </foreach>
+    </select>
+</mapper>

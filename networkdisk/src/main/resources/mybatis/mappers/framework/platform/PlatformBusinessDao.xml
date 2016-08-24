@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.PlatformBusinessDao">
+    <select id="find" resultType="cn.rongyiju.framework.model.platform.BusinessSearchResult">
+        SELECT
+            ppr.id AS business_id,
+            pp.business_trait,
+            pp.business_introduction,
+            ppr.loan_category,
+            ppr.loan_amount,
+            ppr.loan_time_limit,
+            ppr.loan_month_rate,
+            ppr.loan_service_fee,
+            ppr.rebate_type,
+            ppr.rebate_method,
+            ppr.rebate,
+            ppr.repayment_type,
+            ppr.lending_time,
+            ppr.advantage,
+            ppr.description,
+            ppr.loan_conditions,
+            ppr.prepare_material,
+            ((SELECT
+                    COUNT(pop.order_id)
+                FROM
+                    t_platform_order_partner AS pop
+                WHERE
+                    pop.partner_id = pp.id
+                      AND pop.is_delete = 0) + ppr.order_count) AS total_order_count
+        FROM
+            t_platform_partner AS pp
+                INNER JOIN
+            t_platform_partner_rebate AS ppr ON ppr.partner_id = pp.id
+                AND pp.status = 'publish'
+                AND ppr.status = 'publish'
+        WHERE
+            ppr.id = #{businessId}
+    </select>
+
+    <select id="search" resultType="cn.rongyiju.framework.model.platform.BusinessSearchResult">
+        SELECT
+            ppr.id AS business_id,
+            pp.business_trait,
+            pp.business_introduction,
+            ppr.loan_category,
+            ppr.loan_amount,
+            ppr.loan_time_limit,
+            ppr.loan_month_rate,
+            ppr.loan_service_fee,
+            ppr.rebate_type,
+            ppr.rebate_method,
+            ppr.rebate,
+            ppr.repayment_type,
+            ppr.lending_time,
+            ppr.advantage,
+            ppr.description,
+            ppr.loan_conditions,
+            ppr.prepare_material,
+            ((SELECT
+                    COUNT(pop.order_id)
+                FROM
+                    t_platform_order_partner AS pop
+                WHERE
+                    pop.partner_id = pp.id
+                      AND pop.is_delete = 0) + ppr.order_count) AS total_order_count
+        FROM
+            t_platform_partner AS pp
+                INNER JOIN
+            t_platform_partner_rebate AS ppr ON ppr.partner_id = pp.id
+                AND pp.status = 'publish'
+                AND ppr.status = 'publish'
+        <include refid="searchCondition"/>
+        <include refid="defaultOrderBy"/>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="count" resultType="java.lang.Long">
+        SELECT COUNT(ppr.id)
+        FROM
+          t_platform_partner AS pp
+        INNER JOIN
+            t_platform_partner_rebate AS ppr ON ppr.partner_id = pp.id
+                AND pp.status = 'publish'
+                AND ppr.status = 'publish'
+        <include refid="searchCondition"/>
+    </select>
+
+    <sql id="searchCondition">
+        <trim prefix="WHERE" prefixOverrides="AND|OR" suffixOverrides="AND|OR">
+            <if test="loanCategory != null and loanCategory.value > 0">AND ppr.loan_category = #{loanCategory}</if>
+        </trim>
+    </sql>
+    <sql id="defaultOrderBy">
+        <trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+            pp.weight DESC,
+            <if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+                <foreach collection="sortFieldSet" item="field">
+                    <if test="field.sortType != null and field.sortType.value > 0">
+                        ${field.value} ${field.sortType.direction},
+                    </if>
+                </foreach>
+            </if>
+            pp.update_time DESC , pp.id DESC
+        </trim>
+    </sql>
+</mapper>

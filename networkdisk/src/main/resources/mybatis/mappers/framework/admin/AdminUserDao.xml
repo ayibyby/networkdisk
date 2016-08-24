@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.AdminUserDao">
+    <select id="getAllProductManagers" resultType="cn.rongyiju.framework.model.member.User">
+        SELECT
+            u.*
+        FROM
+            t_admin_member_relation AS amr
+                INNER JOIN
+            t_admin_user_role_relation AS aurr ON aurr.uid = amr.admin_uid
+                INNER JOIN
+            t_admin_user_role AS aur ON aur.id = aurr.rid
+                INNER JOIN
+            t_user AS u ON u.id = amr.member_uid
+        WHERE
+            aur.alias = 'productManager';
+    </select>
+    <select id="getPlatformOrderServiceUser" resultType="cn.rongyiju.framework.model.member.User">
+        SELECT
+            u.*
+        FROM
+            t_platform_order AS po
+                INNER JOIN
+            t_admin_member_relation AS amr ON amr.admin_uid = po.service_uid
+                INNER JOIN
+            t_user AS u ON u.id = amr.member_uid
+        WHERE
+            po.id = #{orderId};
+    </select>
+</mapper>

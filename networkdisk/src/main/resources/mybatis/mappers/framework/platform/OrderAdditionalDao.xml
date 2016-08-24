@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.OrderAdditionalDao">
+    <resultMap id="OrderAdditionalResultMap" type="OrderAdditional">
+        <id property="id" column="id"/>
+        <result property="uid" column="uid"/>
+        <result property="orderId" column="order_id"/>
+        <result property="category" column="category"/>
+        <result property="fileName" column="file_name"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+
+        <association property="orderFile" javaType="OrderFile">
+            <id property="id" column="file_id"/>
+            <result property="uid" column="file_uid"/>
+            <result property="displayName" column="file_display_name"/>
+            <result property="filePath" column="file_path"/>
+            <result property="fileLength" column="file_length"/>
+            <result property="token" column="file_token"/>
+        </association>
+
+        <association property="thumbnailFile" javaType="OrderFile">
+            <id property="id" column="thumbnail_file_id"/>
+            <result property="uid" column="thumbnail_file_uid"/>
+            <result property="displayName" column="thumbnail_file_display_name"/>
+            <result property="filePath" column="thumbnail_file_path"/>
+            <result property="fileLength" column="thumbnail_file_length"/>
+            <result property="token" column="thumbnail_file_token"/>
+        </association>
+    </resultMap>
+
+    <insert id="add" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+        INSERT INTO t_platform_order_additional (uid, order_id, category, file_name, file_id, thumbnail_id, is_delete, create_time)
+        VALUES (#{uid}, #{orderId}, #{category}, #{fileName}, #{fileId}, #{thumbnailId}, 0, NOW())
+        ON DUPLICATE KEY UPDATE
+        <trim prefixOverrides="," suffixOverrides=",">
+            file_id = #{fileId}
+        </trim>
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM t_platform_order_additional WHERE id = #{id}
+    </delete>
+
+    <select id="find" resultType="cn.rongyiju.framework.model.platform.OrderFile">
+       SELECT  pof.id AS id,
+                pof.uid AS uid,
+                pof.display_name AS display_name,
+                pof.file_path AS file_path,
+                pof.file_length AS file_length,
+                pof.token AS token
+        FROM t_platform_order_file AS pof
+        WHERE pof.id = #{fileId} AND pof.is_delete = 0
+    </select>
+    <select id="search" resultMap="OrderAdditionalResultMap">
+        SELECT poa.id, poa.uid, poa.order_id, poa.category, poa.file_name, poa.create_time, poa.update_time,
+                pof.id AS file_id,
+                pof.uid AS file_uid,
+                pof.display_name AS file_display_name,
+                pof.file_path AS file_path,
+                pof.file_length AS file_length,
+                pof.token AS file_token,
+
+                poft.id AS thumbnail_file_id,
+                poft.uid AS thumbnail_file_uid,
+                poft.display_name AS thumbnail_file_display_name,
+                poft.file_path AS thumbnail_file_path,
+                poft.file_length AS thumbnail_file_length,
+                poft.token AS thumbnail_file_token
+        FROM t_platform_order_additional AS poa
+        INNER JOIN t_platform_order_file AS pof ON pof.id = poa.file_id
+        LEFT JOIN t_platform_order_file AS poft ON poft.id = poa.thumbnail_id
+        WHERE poa.uid = #{uid} AND poa.order_id = #{orderId} AND poa.is_delete = 0
+    </select>
+</mapper>

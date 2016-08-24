@@ -1,0 +1,460 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.rongyiju.framework.dao.UserDao">
+
+    <resultMap id="UserResultMap" type="UserResult">
+        <id property="uid" column="userId"/>
+
+        <association property="service" column="userId" select="getUserServiceAttributeValue"/>
+    </resultMap>
+
+    <resultMap id="UserMap" type="cn.rongyiju.framework.model.member.User">
+        <id property="id" column="id"/>
+
+        <association property="attributes" column="id" select="getAttributes"/>
+    </resultMap>
+
+    <insert id="register" parameterType="RegisterArgs">
+        INSERT INTO t_user(id, name, mobile, password, uuid, gender, reg_ip, privacy_option, stealth_option,
+        comefrom, invite_code, lat, lng, province, city, district, info_completed, status, create_time)
+        VALUES (#{uid}, #{name}, #{mobile}, #{password}, #{uuid}, #{gender}, #{regIP}, 'anybody', 'visible',
+        #{comefrom}, #{inviteCode}, #{lat}, #{lng}, #{province}, #{city}, #{district}, 0, 'publish', NOW())
+    </insert>
+    <insert id="follow">
+        INSERT INTO t_user_follower (uid, follower_id, display_name)
+        VALUES(#{uid}, #{followerUid}, #{displayName})
+    </insert>
+    <update id="modifyFriendDisplayName">
+        UPDATE t_user_follower
+        SET display_name = #{displayName}
+        WHERE uid = #{uid} AND follower_id = #{followerUid};
+    </update>
+    <insert id="upsertAttribute">
+        <if test="uid != null and uid > 0 and xgroup != null and !xgroup.isEmpty() and xkey != null and !xkey.isEmpty()">
+            INSERT INTO t_user_attr (uid, xgroup, xkey, xvalue, metadata, description)
+            VALUES (#{uid}, #{xgroup}, #{xkey}, #{xvalue}, #{metadata}, #{description})
+            ON DUPLICATE KEY UPDATE
+            <trim prefixOverrides="," suffixOverrides=",">
+                xvalue = #{xvalue},
+                metadata = #{metadata},
+                description = #{description}
+            </trim>
+        </if>
+    </insert>
+    <delete id="deleteAttribute">
+        DELETE FROM t_user_attr
+        WHERE uid = #{uid}
+            AND xgroup = #{xgroup}
+            AND xkey = #{xkey}
+    </delete>
+    <update id="modifyNotifySettings">
+        INSERT INTO t_user_attr (uid, xgroup, xkey, xvalue)
+        VALUES (#{uid}, #{xgroup}, #{xkey}, #{xvalue})
+        ON DUPLICATE KEY UPDATE
+        xvalue = #{xvalue}
+    </update>
+
+    <update id="updateUserPassword">
+        UPDATE t_user SET password=#{password} WHERE id=#{uid}
+    </update>
+    <update id="updateUCenterId">
+        UPDATE t_user SET ucenter_id=#{uCenterId} WHERE id=#{uid}
+    </update>
+    <update id="updatePrivacyOption">
+        UPDATE t_user SET privacy_option=#{privacyOption} WHERE id=#{uid}
+    </update>
+    <update id="updateStealthOption">
+        UPDATE t_user SET stealth_option=#{stealthOption} WHERE id=#{uid}
+    </update>
+    <update id="increaseScore">
+        UPDATE t_user SET score = score + #{score} WHERE id = #{uid}
+    </update>
+    <update id="updateFollowCount">
+        <if test="uid != null and uid > 0">
+            UPDATE t_user AS u
+            SET follow_count = (SELECT COUNT(0) FROM t_user_follower AS f WHERE f.follower_id = u.id)
+            WHERE u.id = #{uid}
+        </if>
+    </update>
+    <update id="updateFansCount">
+        <if test="uid != null and uid > 0">
+            UPDATE t_user AS u
+            SET fans_count = (SELECT COUNT(0) FROM t_user_follower AS f WHERE f.uid = u.id)
+            WHERE u.id = #{uid}
+        </if>
+    </update>
+    <update id="updateFriendCount">
+        <if test="uid != null and uid > 0">
+            UPDATE t_user AS u
+            SET fans_count = (
+            SELECT Count(f1.id) FROM t_user_follower AS f1
+            INNER JOIN t_user_follower AS f2 ON f1.uid = f2.follower_id AND f1.follower_id = f2.uid
+            WHERE f1.uid = u.id
+            )
+            WHERE u.id = #{uid}
+        </if>
+    </update>
+    <update id="modify" parameterType="UserModifyArgs">
+        UPDATE t_user
+        <set>
+            name = #{name},
+            nickname = #{nickname},
+            gender = #{gender},
+            birthday = #{birthday},
+            province = #{province},
+            city = #{city},
+            district = #{district},
+            company = #{company},
+            company_address = #{companyAddress},
+        </set>
+        WHERE id = #{uid}
+    </update>
+    <update id="updateGeoLocation">
+        UPDATE t_user SET lat = #{lat}, lng = #{lng}, location_update_time = NOW() WHERE id = #{uid}
+    </update>
+    <update id="saveAvatar">
+        UPDATE t_user SET avatar = #{avatar}, avatar_thumbnail = #{avatar} WHERE id = #{uid}
+    </update>
+    <update id="setInfoCompleted">
+        UPDATE t_user SET info_completed = #{value} WHERE id = #{uid}
+    </update>
+    <update id="updateRealNameStatus">
+        UPDATE t_user SET real_name_status = #{status} WHERE id = #{uid}
+    </update>
+    <update id="updateVerifyStatus">
+        UPDATE t_user SET verify_status = #{status} WHERE id = #{uid}
+    </update>
+
+    <delete id="unFollow">
+        DELETE FROM t_user_follower WHERE (uid = #{uid} AND follower_id = #{followerUid})
+        <if test="removeFans">OR (uid = #{followerUid} AND follower_id = #{uid})</if>
+    </delete>
+
+    <select id="isExists" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_user WHERE id = #{uid} LIMIT 0, 1
+    </select>
+    <select id="isNicknameExists" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_user WHERE nickname = #{nickname} LIMIT 0, 1
+    </select>
+    <select id="isMobileExists" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_user WHERE mobile = #{mobile} LIMIT 0, 1
+    </select>
+    <select id="isEmailExists" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_user WHERE email = #{email} LIMIT 0, 1
+    </select>
+    <select id="isUsernameExists" resultType="boolean">
+		SELECT COUNT(id)>0 AS is_exists FROM t_user WHERE name = #{username} LIMIT 0, 1
+    </select>
+    <select id="isIdCardNumberVerified" resultType="boolean">
+        SELECT COUNT(u.id)>0 AS is_exists
+        FROM t_user AS u
+        INNER JOIN t_user_attr AS a ON (a.uid = u.id AND u.real_name_status = 'successed')
+        WHERE a.xgroup = 'USER_PROFILE_VERIFICATION'
+        AND a.xkey = 'IDCARD_NUMBER'
+        AND a.xvalue = #{idCardNumber};
+    </select>
+    <select id="getUserByEmail" resultType="User">
+        SELECT * FROM t_user WHERE email = #{email} LIMIT 0, 1
+    </select>
+    <select id="getUserByMobile" resultType="User" resultMap="UserMap">
+        SELECT * FROM t_user WHERE mobile = #{mobile} LIMIT 0, 1
+    </select>
+    <select id="getUserByNickname" resultType="User">
+        SELECT * FROM t_user WHERE nickname = #{nickname} LIMIT 0, 1
+    </select>
+    <select id="getUserById" resultType="User" resultMap="UserMap">
+		SELECT *, fx.display_name AS alias
+		FROM t_user AS u
+		LEFT JOIN t_user_follower AS fx ON fx.uid = u.id AND fx.follower_id = #{currentUid}
+		WHERE u.id = #{uid}
+		LIMIT 0, 1
+    </select>
+    <select id="getUserByUCenterId" resultType="User">
+        SELECT * FROM t_user WHERE id = #{uCenterId} ORDER BY id DESC LIMIT 0, 1
+    </select>
+    <select id="getUserByUsername" resultType="User">
+		SELECT * FROM t_user WHERE name = #{username} LIMIT 0, 1
+    </select>
+    <select id="getUserByOpenId" resultType="User">
+		SELECT u.*
+        FROM t_user AS u
+        INNER JOIN t_user_openauth AS o ON o.uid = u.id
+        WHERE o.openauth_platform = #{platform} AND o.openauth_uid = #{openAuthUid}
+        LIMIT 0, 1
+    </select>
+    <select id="getAttributes" resultType="UserAttribute">
+        SELECT * FROM t_user_attr WHERE uid = #{uid}
+    </select>
+    <select id="getUserServiceAttributeValue" resultType="string">
+        SELECT xvalue FROM t_user_attr WHERE uid = #{uid} AND xgroup = '业务信息' AND xkey = '业务特色' LIMIT 0, 1
+    </select>
+    <select id="isFollower" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists
+        FROM t_user_follower
+        WHERE uid = #{uid} AND follower_id = #{followerUid}
+        LIMIT 0, 1
+    </select>
+    <select id="getFollowCount" resultType="long">
+		SELECT
+            COUNT(id)
+        FROM
+            t_user_follower
+        WHERE
+            follower_id = #{uid}
+            AND uid > 10000000;
+	</select>
+    <select id="getFansCount" resultType="long">
+		SELECT
+            COUNT(id)
+        FROM
+            t_user_follower
+        WHERE
+            uid = #{uid}
+            AND follower_id > 10000000;
+	</select>
+    <select id="getFriendCount" resultType="long">
+        SELECT
+            COUNT(f1.id)
+        FROM
+            t_user_follower AS f1
+                INNER JOIN
+            t_user_follower AS f2 ON f1.uid = f2.follower_id
+        WHERE
+            f1.follower_id = #{uid}
+                AND f2.uid = #{uid}
+            AND f1.uid > 10000000
+            AND f2.follower_id > 10000000;
+	</select>
+    <select id="find" resultType="UserResult" resultMap="UserResultMap">
+        SELECT DISTINCT u.id AS userId, u.nickname, u.avatar, u.avatar_thumbnail, u.gender, u.score, u.lat, u.lng, u.company,
+        u.privacy_option, u.verify_status, u.real_name_status,
+        CASE WHEN fx.display_name IS NULL OR fx.display_name = '' THEN u.name
+        ELSE fx.display_name
+        END AS name
+        <if test="currentUid != null and currentUid > 0">, get_user_follow_state(#{currentUid}, u.id) AS follow_state</if>
+        FROM t_user AS u
+        LEFT JOIN t_user_follower AS fx ON fx.uid = u.id AND fx.follower_id = #{currentUid}
+        WHERE u.id = #{uid}
+    </select>
+    <select id="getUserFollowState" resultType="string">
+		SELECT get_user_follow_state(#{currentUid}, #{targetUid})
+	</select>
+    <select id="getAuthUser" resultMap="UserMap">
+        SELECT u.*
+        FROM t_user AS u
+        INNER JOIN t_user_token AS t ON t.uid = u.id
+        WHERE
+            t.device_id = #{deviceId}
+            AND t.os = #{os}
+            AND (
+                    (t.ukey = #{ukey} AND t.expires_time > NOW())
+                    OR (t.last_ukey = #{ukey} AND t.last_ukey_expires_time > NOW())
+            )
+    </select>
+    <select id="getUserCities" resultType="SearchFilterCityItem">
+        SELECT
+            c.`code`, c.`name`, COUNT(c.code) AS `order`
+        FROM
+            t_ad_city AS c
+                INNER JOIN
+            t_user AS u ON u.city = c.`code`
+        WHERE
+            u.status = 'publish'
+        GROUP BY c.`code` , c.`name`
+        ORDER BY `order` DESC
+    </select>
+
+    <select id="search" resultType="UserResult">
+        SELECT x.*,
+            a1.xvalue AS company,
+            a1.xvalue AS service,
+            CASE
+                WHEN fx.display_name IS NULL OR fx.display_name = '' THEN x.name
+                ELSE fx.display_name
+            END AS name,
+            get_user_follow_state(#{currentUid}, x.uid) AS follow_state
+        FROM (
+            SELECT DISTINCT u.id AS uid, u.name, u.nickname, u.avatar, u.avatar_thumbnail, u.gender, u.score, u.lat, u.lng,
+                              u.verify_status, u.real_name_status, u.company AS company2,
+                              ur.pic AS recommend_pic, ur.comment AS recommend_comment
+            <if test="lat != null and lng != null and distance != null and distance > 0">
+                , lat_lng_distance(u.lat, u.lng, #{lat}, #{lng}) AS distance
+            </if>
+            FROM t_user AS u
+                LEFT JOIN t_user_recommend AS ur ON ur.uid = u.id AND ur.is_deleted = 0
+            <if test="(keywords != null and !keywords.isEmpty()) or (industry != null)">
+                LEFT JOIN t_user_attr AS a ON a.uid = u.id
+            </if>
+            <if test="(relationship != null and relationship.value > 0) or (lat != null and lng != null and distance != null and distance > 0)">
+                LEFT JOIN t_user_follower AS f1 ON f1.uid = u.id
+                LEFT JOIN t_user_follower AS f2 ON f2.follower_id = u.id
+            </if>
+            <include refid="searchCondition"/>
+            <if test="lat == null or lng == null or distance == null">
+                <include refid="defaultOrderBy"/>
+            </if>
+            <if test="lat != null and lng != null and distance != null and distance > 0">
+                <include refid="lbsOrderBy"/>
+            </if>
+            <if test="offset >= 0 and limit > 0">
+                LIMIT #{offset}, #{limit}
+            </if>
+        ) AS x
+        LEFT JOIN t_user_attr AS a1 ON a1.uid = x.uid AND a1.xgroup = '业务信息' AND a1.xkey = '业务特色'
+        LEFT JOIN t_user_follower AS fx ON fx.uid = x.uid AND fx.follower_id = #{currentUid}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(DISTINCT u.id)
+        <if test="lat != null and lng != null and distance != null and distance > 0">
+            , lat_lng_distance(u.lat, u.lng, #{lat}, #{lng}) AS distance
+        </if>
+        FROM t_user AS u
+            LEFT JOIN t_user_recommend AS ur ON ur.uid = u.id AND ur.is_deleted = 0
+        <if test="(keywords != null and !keywords.isEmpty()) or (industry != null)">
+            LEFT JOIN t_user_attr AS a ON a.uid = u.id
+        </if>
+        <if test="(relationship != null and relationship.value > 0) or (lat != null and lng != null and distance != null and distance > 0)">
+            LEFT JOIN t_user_follower AS f1 ON f1.uid = u.id
+            LEFT JOIN t_user_follower AS f2 ON f2.follower_id = u.id
+        </if>
+        <include refid="searchCondition"/>
+    </select>
+    <select id="getRecommendedUsers" resultType="cn.rongyiju.framework.model.member.UserResult">
+        SELECT DISTINCT u.id AS uid, u.nickname, u.avatar, u.avatar_thumbnail, u.gender, u.score, u.lat, u.lng, u.company,
+                        u.privacy_option, u.verify_status, u.real_name_status, u.company AS company2, a1.xvalue AS service,
+                        ur.pic AS recommend_pic, ur.comment AS recommend_comment,
+                        CASE
+                            WHEN fx.display_name IS NULL OR fx.display_name = '' THEN u.name
+                            ELSE fx.display_name
+                        END AS name
+                        <if test="currentUid != null and currentUid > 0">, get_user_follow_state(#{currentUid}, u.id) AS follow_state</if>
+        FROM t_user AS u
+        INNER JOIN t_user_recommend AS ur ON ur.uid = u.id AND ur.is_deleted = 0
+        LEFT JOIN t_user_follower AS fx ON fx.uid = u.id AND fx.follower_id = #{currentUid}
+        LEFT JOIN t_user_attr AS a1 ON a1.uid = u.id AND a1.xgroup = '业务信息' AND a1.xkey = '业务特色'
+        ORDER BY ur.index DESC
+        LIMIT 0, 1;
+    </select>
+    <select id="isFirstVerifyRealName" resultType="java.lang.Boolean">
+        SELECT
+            COUNT(id) = 0 AS is_exists
+        FROM
+            t_user_certification_log
+        WHERE
+            uid = #{uid} AND type = 'realName'
+                AND status = 'successed'
+        LIMIT 0 , 1
+    </select>
+    <select id="isFirstVerifyUserInfo" resultType="java.lang.Boolean">
+        SELECT
+            COUNT(id) = 0 AS is_exists
+        FROM
+            t_user_certification_log
+        WHERE
+            uid = #{uid} AND type = 'verify'
+                AND status = 'successed'
+        LIMIT 0 , 1
+    </select>
+
+    <sql id="searchCondition">
+        <trim prefix="WHERE" prefixOverrides="AND|OR" suffixOverrides="AND|OR">
+            <if test="keywords != null and !keywords.isEmpty()">
+                <foreach item="item" index="index" collection="keywords" open="(" separator=" OR " close=")">
+                    (
+                        u.name LIKE CONCAT('%', #{item}, '%')
+                        OR u.nickname LIKE CONCAT('%', #{item}, '%')
+                        OR
+                        (
+                            a.xgroup = '业务信息' AND
+                            (
+                                a.xkey = '详情介绍'
+                                OR a.xkey = '业务特色'
+                                OR a.xkey = '主营业务'
+                            )
+                            AND a.xvalue LIKE CONCAT('%', #{item}, '%')
+                        )
+                    )
+                </foreach>
+            </if>
+
+            <if test="isRecommended">AND ur.id > 0</if>
+
+            <if test="minScore != null and minScore > 0">AND u.score > #{minScore}</if>
+            <if test="maxScore != null and maxScore > 0">AND u.score &lt;= #{maxScore}</if>
+            <if test="industry != null">AND (a.xgroup = '业务信息' AND a.xkey = '所属行业' AND a.xvalue = #{industry})</if>
+            <if test="gender != null and gender.value > 0">AND u.gender = #{gender}</if>
+
+            <if test="currentUid != null and !isRecommended">AND u.id != #{currentUid}</if>
+
+            <if test="province != null">AND (u.province = #{province} OR u.city = #{province} OR u.district = #{province})</if>
+            <if test="city != null">AND (u.province = #{city} OR u.city = #{city} OR u.district = #{city})</if>
+            <if test="district != null">AND (u.province = #{district} OR u.city = #{district} OR u.district = #{district})</if>
+
+            <if test="lat != null and lng != null and distance != null and distance > 0">
+                AND DATE_ADD(location_update_time, INTERVAL 7 DAY) &gt;= NOW()
+                AND lat_lng_distance(u.lat, u.lng, #{lat}, #{lng}) &lt;= #{distance}
+
+                <!--
+                    f1 他的粉丝
+                    f2 他的关注
+                -->
+                AND (
+                    u.stealth_option = 'visible'
+                    OR (
+                        u.stealth_option != 'hideForAll'
+                        AND (
+                            (u.stealth_option = 'hideForStranger' AND f2.uid = #{currentUid})
+                            OR (u.stealth_option = 'hideForFriends' AND GET_USER_FOLLOW_STATE(#{currentUid}, u.id) != 'followedEachOther')
+                        )
+                    )
+                )
+            </if>
+
+            <if test="relationship != null and relationship.value > 0">
+                <choose>
+                    <!--followed-->
+                    <when test="relationship.value == 1">
+                        AND f1.follower_id = #{currentUid}
+                    </when>
+                    <!--fans-->
+                    <when test="relationship.value == 2">
+                        AND f2.uid = #{currentUid}
+                    </when>
+                    <!--friend-->
+                    <when test="relationship.value == 3">
+                        AND f2.uid = #{currentUid} AND f1.follower_id = #{currentUid}
+                    </when>
+                </choose>
+            </if>
+
+            AND u.id > 10010000
+        </trim>
+    </sql>
+    <sql id="defaultOrderBy">
+        <trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+            <if test="isRecommended">ur.index DESC,</if>
+            <if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+                <foreach collection="sortFieldSet" item="field">
+                    <if test="field.sortType != null and field.sortType.value > 0">
+                        ${field.value} ${field.sortType.direction},
+                    </if>
+                </foreach>
+            </if>
+            u.score DESC, u.update_time DESC
+        </trim>
+    </sql>
+    <sql id="lbsOrderBy">
+        <trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+            <if test="isRecommended">ur.index DESC, </if>
+            distance ASC,
+            <if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+                <foreach collection="sortFieldSet" item="field">
+                    <if test="field.sortType != null and field.sortType.value > 0">
+                        ${field.value} ${field.sortType.direction},
+                    </if>
+                </foreach>
+            </if>
+            u.score DESC, u.update_time DESC
+        </trim>
+    </sql>
+</mapper>

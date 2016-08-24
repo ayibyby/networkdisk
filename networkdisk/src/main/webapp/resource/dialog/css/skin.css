@@ -1,0 +1,39 @@
+#dia{
+	border:6px solid #FFF;
+	background:white;
+	display:block;
+	position:absolute;
+	z-index:99;
+	padding:3px;
+	box-shadow: 0 0 45px #888;
+	-webkit-box-shadow: 0 0 45px #888;
+	width:auto;
+}
+.dia_head{
+	position:relative;
+	background:#38A3DB;
+	height:30px;
+	width:100%;
+}
+.dia_title{
+	width:100%;
+	text-align:center;
+	padding:5px 0;
+}
+.dia_content{
+	width:100%;
+	margin-top:6px;
+	overflow:hidden;
+	padding:10px 10px 5px;
+	height:auto;
+}
+.dia_close{
+	background:url(close.png) center no-repeat;
+	position:absolute;
+	right:-24px;
+	top:-24px;
+	height:30px;
+	width:30px;
+	z-index:100;
+	cursor:pointer;
+}

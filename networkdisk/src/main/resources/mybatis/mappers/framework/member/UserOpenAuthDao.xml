@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.rongyiju.framework.dao.UserOpenAuthDao">
+    <insert id="upsert" parameterType="UserOpenAuth" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+        INSERT INTO t_user_openauth (uid, email, mobile, name, gender, birthday, nickname, avatar, avatar_thumbnail,
+        openauth_platform, openauth_uid, create_time, regip, update_time, c_res1, c_res2, c_res3, i_res1, i_res2)
+        VALUES (#{uid}, #{email}, #{mobile}, #{name}, #{gender}, #{birthday}, #{nickname}, #{avatar},
+        #{avatarThumbnail}, #{openAuthPlatform}, #{openAuthUid}, NOW(), #{regip}, NULL, NULL, NULL, NULL, NULL, NULL)
+        ON DUPLICATE KEY UPDATE
+        <trim prefixOverrides="," suffixOverrides=",">
+            email = #{email},
+            mobile = #{mobile},
+            name = #{name},
+            gender = #{gender},
+            birthday = #{birthday},
+            nickname = #{nickname},
+            avatar = #{avatar},
+            avatar_thumbnail = #{avatarThumbnail},
+            regip = #{regip},
+        </trim>
+    </insert>
+
+    <insert id="upsertUid" parameterType="UserOpenAuth" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+        INSERT INTO t_user_openauth (uid, email, mobile, name, gender, birthday, nickname, avatar, avatar_thumbnail,
+        openauth_platform, openauth_uid, create_time, regip, update_time, c_res1, c_res2, c_res3, i_res1, i_res2)
+        VALUES (#{uid}, #{email}, #{mobile}, #{name}, #{gender}, #{birthday}, #{nickname}, #{avatar},
+        #{avatarThumbnail}, #{openAuthPlatform}, #{openAuthUid}, NOW(), #{regip}, NULL, NULL, NULL, NULL, NULL, NULL)
+        ON DUPLICATE KEY UPDATE
+        <trim prefixOverrides="," suffixOverrides=",">
+            uid = #{uid},
+            email = #{email},
+            mobile = #{mobile},
+            name = #{name},
+            gender = #{gender},
+            birthday = #{birthday},
+            nickname = #{nickname},
+            avatar = #{avatar},
+            avatar_thumbnail = #{avatarThumbnail},
+            regip = #{regip},
+        </trim>
+    </insert>
+
+    <select id="getItemByMobile" resultType="UserOpenAuth">
+        SELECT o.*
+        FROM t_user_openauth AS o
+        INNER JOIN t_user AS u ON u.id = o.uid
+        WHERE u.mobile = #{mobile}
+        LIMIT 0, 1
+    </select>
+
+    <select id="getItemByOpenId" resultType="UserOpenAuth">
+        SELECT *
+        FROM t_user_openauth
+        WHERE openauth_platform = #{platform} AND openauth_uid = #{openAuthUid}
+        LIMIT 0, 1
+    </select>
+
+    <update id="unbindOpenId">
+        UPDATE t_user_openauth
+        SET uid = 0
+        WHERE openauth_platform = #{platform} AND openauth_uid = #{openAuthUid}
+    </update>
+</mapper>

@@ -1,0 +1,5 @@
+*{outline:0;}
+body{font-family:微软雅黑,Helvetica,Arial,'宋体',sans-serif;color:#7777777;}
+input,textarea,select{border:1px solid #DEDEDE;padding:4px 4px;font-size:14px;}
+input:focus,textarea:focus{border-color:#4D90FE!important;}
+input:hover,textarea:hover{box-shadow:-1px -1px 1px rgba(0,0,0,0.1) inset;}

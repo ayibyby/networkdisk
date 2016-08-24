@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.PlatformOrdersDao">
+	<resultMap id="PlatformOrderResultMap" type="PlatformOrder" autoMapping="true">
+		<id property="id" column="id"/>
+		<collection property="attributes" ofType="OrderAttribute">
+			<id property="id" column="poa_id"/>
+			<result property="orderId" column="id"/>
+			<result property="xgroup" column="poa_group"/>
+			<result property="xkey" column="poa_key"/>
+			<result property="xvalue" column="poa_value"/>
+		</collection>
+	</resultMap>
+
+	<insert id="add">
+        INSERT INTO t_platform_order (
+            id, uid,
+            province, city, district,
+            customer_type, customer_name, customer_gender, customer_age, customer_marriage, customer_province, customer_city, customer_district,
+            loan_category, loan_amount, loan_period, loan_max_month_rate, loan_max_service_fee,
+            platform_returned_to_initiator,
+            note, service_tel, status, is_delete, create_time,
+            customer_description,
+            loan_description,
+            credit_record_description,
+            housing_description,
+            vehicle_description,
+            working_description,
+            company_description
+        )
+        VALUES (
+            #{id}, #{uid},
+            #{province}, #{city}, #{district},
+            #{customerType}, #{customerName}, #{customerGender}, #{customerAge}, #{customerMarriage}, #{customerProvince}, #{customerCity}, #{customerDistrict},
+            #{loanCategory}, #{loanAmount}, #{loanPeriod}, #{loanMaxMonthRate}, #{loanMaxServiceFee},
+            #{platformReturnedToInitiator},
+            #{note}, #{serviceTel}, #{status}, 0, #{createTime},
+            #{customerDescription},
+            #{loanDescription},
+            #{creditRecordDescription},
+            #{housingDescription},
+            #{vehicleDescription},
+            #{workingDescription},
+            #{companyDescription}
+        )
+    </insert>
+
+	<update id="modify">
+		UPDATE t_platform_order
+		<set>
+			province = #{province},
+			city = #{city},
+			district = #{district},
+
+			customer_type = #{customerType},
+			customer_name = #{customerName},
+			customer_gender = #{customerGender},
+			customer_age = #{customerAge},
+			customer_marriage = #{customerMarriage},
+			customer_province = #{customerProvince},
+			customer_city = #{customerCity},
+			customer_district = #{customerDistrict},
+
+			loan_category = #{loanCategory},
+			loan_amount = #{loanAmount},
+			loan_period = #{loanPeriod},
+			loan_max_month_rate = #{loanMaxMonthRate},
+			loan_max_service_fee = #{loanMaxServiceFee},
+
+			note = #{note},
+
+			platform_returned_to_initiator = #{platformReturnedToInitiator},
+			customer_description = #{customerDescription},
+			loan_description = #{loanDescription},
+			credit_record_description = #{creditRecordDescription},
+			housing_description = #{housingDescription},
+			vehicle_description = #{vehicleDescription},
+			working_description = #{workingDescription},
+			company_description = #{companyDescription}
+		</set>
+		WHERE id = #{id}
+	</update>
+
+	<select id="isExists" resultType="boolean">
+        SELECT COUNT(id) > 0 AS is_exists FROM t_platform_order WHERE id = #{orderId} LIMIT 0, 1
+    </select>
+
+	<select id="find" resultMap="PlatformOrderResultMap">
+		SELECT po.*,
+				poa.id AS poa_id,
+				poa.xgroup AS poa_group,
+				poa.xkey AS poa_key,
+				poa.xvalue AS poa_value
+		FROM t_platform_order AS po
+		INNER JOIN t_platform_order_attr AS poa ON poa.order_id = po.id
+		WHERE po.id = #{id} AND po.is_delete = 0
+    </select>
+
+	<select id="getItemById" resultType="PlatformOrderSearchResult">
+		SELECT po.id, po.uid, po.create_time, po.update_time, po.loan_category, po.status,
+				po.rewards_money, po.platform_returned_to_initiator,
+				po.customer_description,
+				po.loan_description,
+				po.credit_record_description,
+				po.housing_description,
+				po.vehicle_description,
+				po.working_description,
+				po.company_description
+		FROM t_platform_order AS po
+		WHERE po.id = #{id} AND po.is_delete = 0
+    </select>
+
+	<select id="search" resultType="cn.rongyiju.framework.model.platform.PlatformOrderSearchResult">
+		SELECT po.id, po.uid, po.create_time, po.update_time, po.loan_category, po.status,
+				po.rewards_money, po.platform_returned_to_initiator,
+				po.customer_description,
+				po.loan_description,
+				po.credit_record_description,
+				po.housing_description,
+				po.vehicle_description,
+				po.working_description,
+				po.company_description
+		FROM t_platform_order AS po
+		<include refid="searchCondition"/>
+		<include refid="defaultOrderBy"/>
+		LIMIT #{offset}, #{limit}
+	</select>
+	<select id="count" resultType="long">
+		SELECT COUNT(DISTINCT po.id)
+		FROM t_platform_order AS po
+		<include refid="searchCondition"/>
+	</select>
+	<select id="getTopicCities" resultType="cn.rongyiju.framework.model.SearchFilterCityItem">
+        SELECT
+            c.`code`, c.`name`, COUNT(c.code) AS `order`
+        FROM
+            t_ad_city AS c
+                INNER JOIN
+            t_platform_order AS po ON po.city = c.`code`
+        WHERE po.is_delete = 0
+        GROUP BY c.`code` , c.`name`
+        ORDER BY `order` DESC
+    </select>
+
+	<sql id="searchCondition">
+		<trim prefix="WHERE" prefixOverrides="AND|OR" suffixOverrides="AND|OR">
+			<if test="keywords != null and !keywords.isEmpty()">
+				AND
+				<foreach item="item" index="index" collection="keywords" open="(" separator=" OR " close=")">
+					(
+						po.customer_description LIKE CONCAT('%', #{item}, '%')
+						OR po.loan_description LIKE CONCAT('%', #{item}, '%')
+					)
+				</foreach>
+			</if>
+
+			<if test="city != null">AND (po.province = #{city} OR po.city = #{city} OR po.district = #{city})</if>
+			<if test="loanCategory != null and loanCategory.value > 0">AND po.loan_category = #{loanCategory}</if>
+			<if test="status != null and status.value > 0">AND po.status = #{status}</if>
+			<if test="initiatorUid != null and initiatorUid > 0">AND po.uid = #{initiatorUid}</if>
+
+			AND po.is_delete = 0
+		</trim>
+	</sql>
+	<sql id="defaultOrderBy">
+		<trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+			<if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+				<foreach collection="sortFieldSet" item="field">
+					<if test="field.sortType != null and field.sortType.value > 0">
+						${field.value} ${field.sortType.direction},
+					</if>
+				</foreach>
+			</if>
+			po.create_time DESC
+		</trim>
+	</sql>
+</mapper>

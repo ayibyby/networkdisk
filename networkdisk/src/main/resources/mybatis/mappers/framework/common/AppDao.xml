@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.AppDao">
+    <resultMap id="AppResultMap" type="App">
+        <id column="a_id" property="id"/>
+
+        <result property="name" column="name"/>
+        <result property="productId" column="a_product_id"/>
+        <result property="developer" column="a_developer"/>
+        <result property="description" column="a_description"/>
+        <result property="pubdate" column="a_pubdate"/>
+        <result property="ip" column="a_ip"/>
+
+        <collection property="buildList" ofType="AppBuild">
+            <id column="b_id" property="id"/>
+
+            <result property="appId" column="app_id"/>
+            <result property="os" column="os"/>
+            <result property="productId" column="b_product_id"/>
+            <result property="version" column="version"/>
+            <result property="build" column="build"/>
+            <result property="channel" column="channel"/>
+            <result property="developer" column="b_developer"/>
+            <result property="description" column="b_description"/>
+            <result property="pubdate" column="b_pubdate"/>
+            <result property="status" column="status"/>
+            <result property="downloadUrl" column="download_url"/>
+            <result property="link" column="link"/>
+            <result property="ip" column="b_ip"/>
+            <result property="metadata" column="metadata"/>
+        </collection>
+    </resultMap>
+
+    <select id="search" resultType="App" resultMap="AppResultMap">
+        SELECT a.id AS a_id, `name`, a.product_id AS a_product_id, a.developer AS a_developer, a.description AS
+        a_description, a.pubdate AS a_pubdate,
+        a.ip AS a_ip, b.id AS b_id, app_id, os, b.product_id AS b_product_id, version, build, channel, b.developer AS
+        b_developer,
+        b.description AS b_description, b.pubdate AS b_pubdate, `status`, download_url, link, b.ip AS b_ip, metadata
+        FROM t_app AS a
+        INNER JOIN t_app_build AS b ON b.app_id = a.id
+        WHERE b.status = 'publish'
+        ORDER BY a.id ASC, b.os ASC, b.channel ASC, b.pubdate DESC
+    </select>
+</mapper>

@@ -1,0 +1,41 @@
+.mini_tip {
+	position: absolute;
+	z-index: 500;
+}
+.tip_close{
+	display:none;
+	position:absolute;
+	cursor:pointer;
+	width:12px;
+	height:12px;
+	right:3px;
+	top:3px;
+	background:url(images/close_normal.png);
+}
+.tip_close:hover{
+	background:url(images/close_hover.png);
+}
+.tip_content {
+	min-height: 20px;
+	min-width: 30px;
+	padding: 13px;
+	background: #E9FBE4;
+	border: 1px solid green;
+	border-radius:0px;
+}
+.tip_arrow,.tip_arrow_border {
+	position: absolute;
+	width: 0;
+	height: 0;
+	border-width: 8px;
+}
+
+.tip_top .tip_arrow{border-color: #E9FBE4 transparent transparent transparent;}
+.tip_right .tip_arrow{border-color: transparent #E9FBE4 transparent transparent;}
+.tip_bottom .tip_arrow{border-color: transparent transparent #E9FBE4 transparent;}
+.tip_left .tip_arrow{border-color: transparent transparent transparent #E9FBE4;}
+
+.tip_top .tip_arrow_border{border-color: green transparent transparent transparent;}
+.tip_right .tip_arrow_border{border-color: transparent green transparent transparent;}
+.tip_bottom .tip_arrow_border{border-color: transparent transparent green transparent;}
+.tip_left .tip_arrow_border{border-color: transparent transparent transparent green;}

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.PartyDao">
+    <resultMap id="PartyResultMap" type="PartyResult">
+        <id property="id" column="p_id"/>
+
+        <result property="currentUid" column="current_uid"/>
+
+        <association property="initiator" column="{uid=p_uid, currentUid=current_uid}"
+                     select="cn.rongyiju.framework.dao.UserDao.find"/>
+        <association property="guestCount" column="p_id"
+                     select="cn.rongyiju.framework.dao.PartyGuestDao.getGuestCount"/>
+        <association property="guests" column="p_id" select="cn.rongyiju.framework.dao.PartyGuestDao.findAllByPartyId"/>
+        <!--<association property="favoriteCount" column="{contentType=content_type, contentId=id}" select="cn.rongyiju.framework.dao.FavoriteDao.getFavoriteCount"/>-->
+        <!--<association property="praiseCount" column="{contentType=content_type, contentId=p_id}" select="cn.rongyiju.framework.dao.PraiseDao.getPraiseCount"/>-->
+        <association property="isFavorited" column="{contentType=content_type, contentId=id, uid=current_uid}" select="cn.rongyiju.framework.dao.FavoriteDao.isFavorited"/>
+        <association property="isPraised" column="{contentType=content_type, contentId=id, uid=current_uid}" select="cn.rongyiju.framework.dao.PraiseDao.isPraised"/>
+    </resultMap>
+
+    <resultMap id="PartyMap" type="Party">
+        <id property="id" column="p_id"/>
+
+        <result property="currentUid" column="current_uid"/>
+
+        <association property="initiator" column="{uid=p_uid, currentUid=current_uid}"
+                     select="cn.rongyiju.framework.dao.UserDao.find"/>
+        <association property="guestCount" column="p_id"
+                     select="cn.rongyiju.framework.dao.PartyGuestDao.getGuestCount"/>
+        <!--<association property="favoriteCount" column="{contentType=content_type, contentId=id}" select="cn.rongyiju.framework.dao.FavoriteDao.getFavoriteCount"/>-->
+        <!--<association property="praiseCount" column="{contentType=content_type, contentId=p_id}" select="cn.rongyiju.framework.dao.PraiseDao.getPraiseCount"/>-->
+        <association property="isFavorited" column="{contentType=content_type, contentId=id, uid=current_uid}" select="cn.rongyiju.framework.dao.FavoriteDao.isFavorited"/>
+        <association property="isPraised" column="{contentType=content_type, contentId=id, uid=current_uid}" select="cn.rongyiju.framework.dao.PraiseDao.isPraised"/>
+    </resultMap>
+
+    <insert id="add" parameterType="Party">
+        INSERT INTO t_party (id, uid, title, category, party_time, description, mobile, province, city, district,
+        address, lat, lng, max_num, fee_type, status, create_uid, create_time)
+        VALUES (#{id}, #{uid}, #{title}, #{category}, #{partyTime}, #{description}, #{mobile}, #{province}, #{city},
+        #{district}, #{address}, #{lat}, #{lng}, #{maxNum}, #{feeType}, #{status}, #{createUid}, #{createTime});
+    </insert>
+    <insert id="apply" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+        INSERT INTO t_party_user_relation (party_id, uid, mobile)
+        VALUES (#{partyId}, #{uid}, #{mobile});
+    </insert>
+
+    <update id="updateStatus">
+        UPDATE t_party SET status = #{status} WHERE id = #{partyId}
+    </update>
+    <update id="modify">
+        UPDATE t_party
+        <set>
+            title = #{title},
+            category = #{category},
+            party_time = #{partyTime},
+            description = #{description},
+            mobile = #{mobile},
+            province = #{province},
+            city = #{city},
+            district = #{district},
+            address = #{address},
+            lat = #{lat},
+            lng = #{lng},
+            max_num = #{maxNum},
+            fee_type = #{feeType},
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="getCleaningList" resultType="PartyResult">
+        SELECT id, uid, title
+        FROM t_party
+        WHERE status = 'available' AND NOW() > party_time
+    </select>
+    <select id="find" resultType="PartyResult" resultMap="PartyResultMap">
+        SELECT p.*, p.id AS p_id, p.uid AS p_uid, ${currentUid} AS current_uid, 'party' AS content_type,
+        (SELECT COUNT(pr.id) FROM t_praise AS pr WHERE content_type = 'party' AND content_id = p.id) AS praise_count,
+        (SELECT COUNT(f.id) FROM t_favorite AS f WHERE content_type = 'party' AND content_id = p.id) AS favorite_count
+
+        <if test="currentUid > 0">
+            , CASE WHEN fx.display_name IS NULL OR fx.display_name = '' THEN u.name
+            ELSE fx.display_name
+            END AS username
+        </if>
+
+        FROM t_party AS p
+        INNER JOIN t_user AS u ON p.uid = u.id
+
+        <if test="currentUid > 0">
+            LEFT JOIN t_user_follower AS fx ON fx.uid = p.uid AND fx.follower_id = #{currentUid}
+        </if>
+
+        WHERE p.id = #{id} AND p.is_delete = 0
+    </select>
+    <select id="findAllById" resultType="Party" resultMap="PartyResultMap">
+        SELECT p.*, p.id AS p_id, p.uid AS p_uid, ${currentUid} AS current_uid, 'party' AS content_type,
+        CASE WHEN fx.display_name IS NULL OR fx.display_name = '' THEN u.name
+        ELSE fx.display_name
+        END AS username,
+        (SELECT COUNT(pr.id) FROM t_praise AS pr WHERE content_type = 'party' AND content_id = p.id) AS praise_count,
+        (SELECT COUNT(f.id) FROM t_favorite AS f WHERE content_type = 'party' AND content_id = p.id) AS favorite_count
+        FROM t_party AS p
+        INNER JOIN t_user AS u ON p.uid = u.id
+        LEFT JOIN t_user_follower AS fx ON fx.uid = p.uid AND fx.follower_id = #{currentUid}
+        WHERE p.id IN
+        <foreach item="item" index="index" collection="id" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        ORDER BY update_time DESC, id DESC
+    </select>
+    <select id="isExists" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_party WHERE id = #{id} LIMIT 0, 1
+    </select>
+    <select id="isInitiator" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_initiator FROM t_party WHERE id = #{partyId} AND uid = #{uid} LIMIT 0, 1
+    </select>
+    <select id="search" resultType="Party" resultMap="PartyMap">
+        SELECT DISTINCT p.*, p.id AS p_id, p.uid AS p_uid, ${currentUid} AS current_uid, 'party' AS content_type,
+        CASE WHEN fx.display_name IS NULL OR fx.display_name = '' THEN u.name
+        ELSE fx.display_name
+        END AS username,
+        (SELECT COUNT(x.id)>0 FROM t_party_user_relation AS x WHERE x.party_id = p.id AND x.uid = #{currentUid} LIMIT 0, 1) AS is_applied,
+        CASE p.status
+        WHEN 'available' THEN 0
+        WHEN 'finished' THEN 1
+        WHEN 'cancelled' THEN 2
+        ELSE 99
+        END AS status_value,
+        (SELECT COUNT(pr.id) FROM t_praise AS pr WHERE content_type = 'party' AND content_id = p.id) AS praise_count,
+        (SELECT COUNT(f.id) FROM t_favorite AS f WHERE content_type = 'party' AND content_id = p.id) AS favorite_count
+        <if test="lat != null and lng != null and distance != null and distance > 0">, lat_lng_distance(p.lat, p.lng, #{lat}, #{lng}) AS distance</if>
+        FROM t_party AS p
+        LEFT JOIN t_user AS u ON p.uid = u.id
+        LEFT JOIN t_party_user_relation AS r ON r.party_id = p.id
+        LEFT JOIN t_user_follower AS fx ON fx.uid = p.uid AND fx.follower_id = #{currentUid}
+        <include refid="searchCondition"/>
+        <if test="lat == null or lng == null or distance == null">
+            <include refid="defaultOrderBy"/>
+        </if>
+        <if test="lat != null and lng != null and distance != null and distance > 0">
+            <include refid="lbsOrderBy"/>
+        </if>
+        LIMIT #{offset}, #{limit}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(DISTINCT p.id)
+        FROM t_party AS p
+        INNER JOIN t_user AS u ON p.uid = u.id
+        LEFT JOIN t_party_user_relation AS r ON r.party_id = p.id
+        <include refid="searchCondition"/>
+    </select>
+    <select id="getTodayCount" resultType="long">
+        SELECT COUNT(DISTINCT p.id)
+        FROM t_party AS p
+        WHERE p.uid = #{currentUid} AND to_days(p.create_time) = to_days(now());
+    </select>
+    <select id="getPartyCities" resultType="SearchFilterCityItem">
+        SELECT c.`code`, c.`name`, Count(c.code) AS `order`
+        FROM t_ad_city AS c
+        INNER JOIN t_party AS p ON p.city = c.`code`
+        WHERE p.is_delete = 0
+        GROUP BY c.`code`, c.`name`
+        ORDER BY `order` DESC
+    </select>
+
+    <sql id="searchCondition">
+        <trim prefix="WHERE" prefixOverrides="AND|OR" suffixOverrides="AND|OR">
+            <if test="category != null and category.value > 0">AND p.category = #{category}</if>
+            <if test="feeType != null and feeType.value > 0">AND p.fee_type = #{feeType}</if>
+
+            <if test="province != null">AND (p.province = #{province} OR p.city = #{province} OR p.district = #{province})</if>
+            <if test="city != null">AND (p.province = #{city} OR p.city = #{city} OR p.district = #{city})</if>
+            <if test="district != null">AND (p.province = #{district} OR p.city = #{district} OR p.district = #{district})</if>
+
+            <if test="1 > initiatorUid and 1 > guestUid">
+                <if test="lat == null and lng == null and distance == null">AND (p.status = 'available' OR p.status =
+                    'finished')
+                </if>
+                <if test="lat != null and lng != null and distance != null and distance > 0">AND p.status =
+                    'available'
+                </if>
+            </if>
+            <if test="initiatorUid > 0">AND p.uid = #{initiatorUid}</if>
+            <if test="guestUid > 0">AND r.uid = #{guestUid}</if>
+
+            <if test="lat != null and lng != null and distance != null and distance > 0">AND lat_lng_distance(p.lat,
+                p.lng, #{lat}, #{lng}) &lt;= #{distance}
+            </if>
+
+            <if test="keywords != null and !keywords.isEmpty()">
+                AND
+                <foreach item="item" index="index" collection="keywords" open="(" separator=" OR " close=")">
+                    (
+                    p.title LIKE CONCAT('%', #{item}, '%')
+                    OR p.description LIKE CONCAT('%', #{item}, '%')
+                    OR u.name LIKE CONCAT('%', #{item}, '%')
+                    )
+                </foreach>
+            </if>
+
+            AND p.is_delete = 0
+        </trim>
+    </sql>
+    <sql id="defaultOrderBy">
+        <trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+            status_value ASC,
+            p.party_time ASC,
+            <if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+                <foreach collection="sortFieldSet" item="field">
+                    <if test="field.sortType != null and field.sortType.value > 0">
+                        ${field.value} ${field.sortType.direction},
+                    </if>
+                </foreach>
+            </if>
+            p.create_time DESC,
+            p.id DESC
+        </trim>
+    </sql>
+    <sql id="lbsOrderBy">
+        <trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+            status_value ASC,
+            p.party_time ASC,
+            distance ASC,
+            <if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+                <foreach collection="sortFieldSet" item="field">
+                    <if test="field.sortType != null and field.sortType.value > 0">
+                        ${field.value} ${field.sortType.direction},
+                    </if>
+                </foreach>
+            </if>
+            p.create_time DESC,
+            p.id DESC
+        </trim>
+    </sql>
+</mapper>

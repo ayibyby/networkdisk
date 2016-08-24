@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.SystemNoticeDao">
+    <resultMap id="SystemNoticeResultMap" type="SystemNotice">
+        <id column="id" property="id"/>
+
+        <result column="policies" property="policies" typeHandler="cn.rongyiju.framework.typehandler.IntegerListTypeHandler"/>
+
+        <collection property="buttons" column="{noticeId=id}" select="cn.rongyiju.framework.dao.SystemNoticeDao.findButton"/>
+    </resultMap>
+
+    <insert id="addPushRecord">
+        INSERT INTO t_sys_notice_user (uid, notice_id, button_id, create_time)
+        VALUES (#{uid}, #{noticeId}, #{buttonId}, NOW());
+    </insert>
+    <select id="findAll" resultMap="SystemNoticeResultMap">
+        SELECT
+            *
+        FROM
+            t_sys_notice
+        WHERE
+            is_deleted = 0
+            AND status = 'publish'
+        ;
+    </select>
+    <select id="isPushed" resultType="java.lang.Boolean">
+        SELECT
+            COUNT(id) > 0 AS is_exists
+        FROM
+            t_sys_notice_user
+        WHERE
+            uid = #{uid}
+            AND notice_id = #{noticeId}
+        LIMIT 0 , 1;
+    </select>
+    <select id="findButton" resultType="SystemNoticeButton">
+        SELECT
+            *
+        FROM
+            t_sys_notice_button
+        WHERE
+            notice_id = #{noticeId}
+        ;
+    </select>
+    <select id="find" resultType="cn.rongyiju.framework.model.common.SystemNotice">
+        SELECT
+            *
+        FROM
+            t_sys_notice
+        WHERE
+            id = #{noticeId}
+        ;
+    </select>
+</mapper>

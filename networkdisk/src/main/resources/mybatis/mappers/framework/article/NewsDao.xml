@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.NewsDao">
+    <resultMap id="newsSearchResultMap" type="NewsSearchResult">
+        <id property="id" column="id"/>
+
+        <!--<association property="favoriteCount" column="{contentType=content_type, contentId=id}" select="cn.rongyiju.framework.dao.FavoriteDao.getFavoriteCount"/>-->
+        <!--<association property="praiseCount" column="{contentType=content_type, contentId=id}" select="cn.rongyiju.framework.dao.PraiseDao.getPraiseCount"/>-->
+        <association property="isFavorited" column="{contentType=content_type, contentId=id, uid=current_uid}" select="cn.rongyiju.framework.dao.FavoriteDao.isFavorited"/>
+        <association property="isPraised" column="{contentType=content_type, contentId=id, uid=current_uid}" select="cn.rongyiju.framework.dao.PraiseDao.isPraised"/>
+    </resultMap>
+
+    <insert id="add">
+        INSERT INTO t_news (id, title, summary, content, author, source, weight, status, pic, video, keywords,
+        create_uid, create_time, update_uid, c_res1, c_res2, c_res3, i_res1, i_res2, i_res3)
+        VALUES (#{id}, #{title}, #{summary}, #{content}, #{author}, #{source}, #{weight}, #{status}, #{pic}, #{video},
+        #{keywords}, #{createUid}, #{createTime}, #{updateUid}, #{cRes1}, #{cRes2}, #{cRes3}, #{iRes1}, #{iRes2},
+        #{iRes3})
+    </insert>
+
+
+    <update id="update" parameterType="News">
+        <if test="id > 0">
+            UPDATE t_news
+            <set>
+                title=#{title},
+                summary=#{summary},
+                content=#{content},
+                author=#{author},
+                source=#{source},
+                weight=#{weight},
+                status=#{status},
+                pic=#{pic},
+                pic=#{video},
+                pic=#{keywords},
+                update_uid=#{updateUid},
+            </set>
+            WHERE id = #{id}
+        </if>
+    </update>
+
+
+    <delete id="deleteById">
+        DELETE FROM t_news WHERE id=#{id}
+    </delete>
+    <delete id="batchDeleteById">
+        DELETE FROM t_news WHERE id IN
+        <foreach item="item" index="index" collection="id" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </delete>
+
+    <select id="find" resultMap="newsSearchResultMap">
+        SELECT *, ${currentUid} AS current_uid, 'news' AS content_type,
+            (SELECT COUNT(pr.id) FROM t_praise AS pr WHERE content_type = 'news' AND content_id = n.id) AS praise_count,
+            (SELECT COUNT(f.id) FROM t_favorite AS f WHERE content_type = 'news' AND content_id = n.id) AS favorite_count
+        FROM t_news AS n WHERE id=#{id}
+    </select>
+    <select id="findAllById" resultMap="newsSearchResultMap">
+        SELECT *, ${currentUid} AS current_uid, 'news' AS content_type,
+            (SELECT COUNT(pr.id) FROM t_praise AS pr WHERE content_type = 'news' AND content_id = n.id) AS praise_count,
+            (SELECT COUNT(f.id) FROM t_favorite AS f WHERE content_type = 'news' AND content_id = n.id) AS favorite_count
+        FROM t_news AS n WHERE id IN
+        <foreach item="item" index="index" collection="id" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        ORDER BY weight DESC, update_time DESC
+    </select>
+    <select id="isExists" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_news WHERE id = #{id} LIMIT 0, 1
+    </select>
+    <select id="search" resultMap="newsSearchResultMap">
+        SELECT id, title, summary, pic, video, keywords, author, source, create_time, update_time, weight, status,
+        ${currentUid} AS current_uid, 'news' AS content_type,
+        (SELECT COUNT(pr.id) FROM t_praise AS pr WHERE content_type = 'news' AND content_id = n.id) AS praise_count,
+        (SELECT COUNT(f.id) FROM t_favorite AS f WHERE content_type = 'news' AND content_id = n.id) AS favorite_count
+        FROM t_news AS n
+        <include refid="searchCondition"/>
+        <include refid="defaultOrderBy"/>
+        LIMIT #{offset}, #{limit}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(0) FROM t_news
+        <include refid="searchCondition"/>
+    </select>
+
+    <sql id="searchCondition">
+        <trim prefix="WHERE" prefixOverrides="AND|OR" suffixOverrides="AND|OR">
+            <if test="keywords != null and !keywords.isEmpty()">
+                <foreach item="item" index="index" collection="keywords" open="(" separator=" OR " close=")">
+                    (title LIKE CONCAT('%', #{item}, '%') OR summary LIKE CONCAT('%', #{item}, '%') OR content LIKE
+                    CONCAT('%', #{item}, '%'))
+                </foreach>
+            </if>
+
+            <if test="author != null and !author.isEmpty()">AND author = #{author}</if>
+            <if test="source != null and !source.isEmpty()">AND source = #{source}</if>
+            <if test="status != null and status.value > 0">AND status = #{status}</if>
+            <if test="createUid != null and createUid > 0">AND createUid = #{createUid}</if>
+            <if test="updateUid != null and updateUid > 0">AND updateUid = #{updateUid}</if>
+
+            <if test="beginCreateTime != null and endCreateTime != null and beginCreateTime &lt;= endCreateTime">AND
+                (create_time BETWEEN beginCreateTime AND endCreateTime)
+            </if>
+            <if test="beginUpdateTime != null and endUpdateTime != null and beginUpdateTime &lt;= endUpdateTime">AND
+                (update_time BETWEEN beginUpdateTime AND endUpdateTime)
+            </if>
+        </trim>
+    </sql>
+    <sql id="defaultOrderBy">
+        <trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+            <if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+                <foreach collection="sortFieldSet" item="field">
+                    <if test="field.sortType != null and field.sortType.value > 0">
+                        ${field.value} ${field.sortType.direction},
+                    </if>
+                </foreach>
+            </if>
+            update_time DESC
+        </trim>
+    </sql>
+</mapper>

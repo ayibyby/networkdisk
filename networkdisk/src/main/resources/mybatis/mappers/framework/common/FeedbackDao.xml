@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.FeedbackDao">
+    <insert id="add" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO t_feedback (uid, version, build, device_id, os, product_id, resolution, device_name, mac,
+        manufacturer, cpu, sdk_version, access, platform, channel, content, ip)
+        VALUES (#{uid}, #{version}, #{build}, #{deviceId}, #{os}, #{productId}, #{resolution}, #{deviceName}, #{mac},
+        #{manufacturer}, #{cpu}, #{sdkVersion}, #{access}, #{platform}, #{channel}, #{content}, #{ip})
+    </insert>
+</mapper>

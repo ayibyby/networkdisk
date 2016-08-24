@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.MessageDao">
+    <resultMap id="MessageSenderResultMap" type="MessageSender">
+        <id property="uid" column="from_uid"/>
+
+        <result property="name" column="from_name"/>
+        <result property="avatar" column="from_avatar"/>
+        <result property="gender" column="from_gender"/>
+        <result property="lastContent" column="content"/>
+        <result property="lastSendTime" column="receive_time"/>
+
+        <collection property="messages" ofType="Message">
+            <id property="id" column="id"/>
+
+            <result property="from" column="from"/>
+            <result property="to" column="to"/>
+            <result property="content" column="content"/>
+            <result property="status" column="status"/>
+            <result property="receiveTime" column="receive_time"/>
+        </collection>
+    </resultMap>
+
+    <insert id="add" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+        INSERT INTO t_user_message (`from`, `to`, content, status, send_delete, receive_delete, pic, audio, video,
+        receive_time, create_time, create_uid)
+        VALUES (#{from}, #{to}, #{content}, #{status}, #{sendDelete}, #{receiveDelete}, #{pic}, #{audio}, #{video},
+        #{receiveTime}, #{createTime}, #{createUid})
+    </insert>
+
+    <insert id="upsertLastReceiveTime" keyColumn="id" keyProperty="id">
+        INSERT INTO t_user_message_receive (uid, last_receive_time)
+        VALUES (#{uid}, #{lastReceiveTime})
+        ON DUPLICATE KEY UPDATE
+        last_receive_time = #{lastReceiveTime}
+    </insert>
+
+    <select id="getLastReceiveTime" resultType="date">
+        SELECT Max(r.last_receive_time) AS last_receive_time
+        FROM t_user_message_receive AS r
+        WHERE r.uid = #{uid}
+    </select>
+    <select id="findMessages" resultMap="MessageSenderResultMap">
+        SELECT uf.id AS from_uid, uf.avatar AS from_avatar, uf.gender AS from_gender,
+        m.id, m.`from`, m.`to`, m.content, m.`status`, m.receive_time,
+        CASE WHEN fx.display_name IS NULL OR fx.display_name = '' THEN uf.`name`
+        ELSE fx.display_name
+        END AS from_name
+        FROM t_user_message AS m
+        INNER JOIN t_user AS uf ON m.`from` = uf.id
+        LEFT JOIN t_user_follower AS fx ON fx.uid = m.`from` AND fx.follower_id = #{uid}
+        <where>
+            <trim prefixOverrides="AND|OR" suffixOverrides="AND|OR">
+                m.receive_delete = 0
+                AND m.`to` = #{uid}
+
+                <if test="lastReceiveTime != null">AND m.receive_time > #{lastReceiveTime}</if>
+                <if test="status != null and status.value > 0">AND m.`status` = #{status}</if>
+            </trim>
+        </where>
+        ORDER BY m.receive_time DESC, m.id DESC
+    </select>
+</mapper>

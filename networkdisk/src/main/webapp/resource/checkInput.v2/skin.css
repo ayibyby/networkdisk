@@ -1,0 +1,40 @@
+.focus_input,.right_input,.error_input,.ajax_checking_input{
+}
+
+
+
+.focus_input{
+	background-image:url(tip.png)!important;
+	background-position:right 3px!important;
+	background-repeat:no-repeat!important;
+}
+.right_input{
+	background-image:url(tip.png)!important;
+	background-position:right -341px!important;
+	background-repeat:no-repeat!important;
+	background-color:#9BDF70!important;
+}
+.error_input{
+	background-image:url(tip.png)!important;
+	background-position:right -688px!important;
+	background-repeat:no-repeat!important;
+	box-shadow:1px 1px 15px rgba(255,167,155,0.8)!important;
+	border-color:rgba(255,167,155,0.8)!important;
+}
+.ajax_checking_input{
+	background-image:url(loading.gif)!important;
+	background-position:right 6px!important;
+	background-repeat:no-repeat!important;
+}
+
+.input_tip{
+	letter-spacing:1px;
+	text-align:center;
+	padding:2px 0;
+	display:inline-block;
+	white-space: nowrap;
+	overflow:hidden;
+}
+.focus_tip{color:#FF6600;background:#E6FFE6;}
+.error_tip{color:#FF0000;background:#FFF2E9;}
+.ajax_checking_tip{color:#009828;background:#FF6600;}

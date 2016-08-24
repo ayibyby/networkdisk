@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.PraiseDao">
+	<insert id="add" useGeneratedKeys="false">
+        INSERT INTO t_praise (id, uid, content_type, content_id, create_time)
+        VALUES (#{id}, #{uid}, #{contentType}, #{contentId}, NOW())
+    </insert>
+
+	<delete id="delete">
+        DELETE FROM t_praise WHERE id = #{id}
+    </delete>
+
+	<select id="find" resultType="PraiseItem">
+        SELECT * FROM t_praise WHERE id = #{id}
+    </select>
+	<select id="getItemByContentId" resultType="PraiseItem">
+        SELECT * FROM t_praise WHERE uid = #{currentUid} AND content_type = #{contentType} AND content_id = #{contentId}
+    </select>
+	<select id="isExists" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_praise WHERE id = #{id} LIMIT 0, 1
+    </select>
+	<select id="isPraised" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_praise WHERE uid = #{uid} AND content_type = #{contentType} AND content_id = #{contentId} LIMIT 0, 1
+    </select>
+	<select id="getPraiseCount" resultType="int">
+        SELECT COUNT(id) FROM t_praise WHERE content_type = #{contentType} AND content_id = #{contentId}
+    </select>
+</mapper>

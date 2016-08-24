@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.TopicComplainDao">
+    <insert id="add" parameterType="AddTopicComplainArgs">
+        INSERT INTO t_topic_complain (id, topic_id, uid, content, status, create_time)
+        VALUES (#{id}, #{topicId}, #{uid}, #{content}, 'pending', NOW());
+    </insert>
+
+    <select id="isExists" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_topic_complain WHERE id = #{id} LIMIT 0, 1
+    </select>
+</mapper>

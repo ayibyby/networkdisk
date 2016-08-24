@@ -1,0 +1,2 @@
+1、涉及到多表修改（或者多sql）的操作，都有对应的transaction，所有事务在没完成时会抛出runtimeexception
+2、查询或单sql的修改操作，一般用dao完成

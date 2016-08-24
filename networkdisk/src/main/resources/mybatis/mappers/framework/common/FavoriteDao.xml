@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.FavoriteDao">
+	<resultMap id="FavoriteSearchResultMap" type="FavoriteSearchResult">
+		<id property="id" column="o_id"/>
+
+		<association property="orderData" column="{id=order_id, currentUid=current_uid}" select="cn.rongyiju.framework.dao.OrderDao.find"/>
+		<association property="partyData" column="{id=party_id, currentUid=current_uid}" select="cn.rongyiju.framework.dao.PartyDao.find"/>
+		<association property="newsData" column="{id=news_id, currentUid=current_uid}" select="cn.rongyiju.framework.dao.NewsDao.find"/>
+		<association property="topicData" column="{id=topic_id, currentUid=current_uid}" select="cn.rongyiju.framework.dao.TopicDao.find"/>
+		<association property="platformOrderData" column="{id=platform_order_id, currentUid=current_uid}" select="cn.rongyiju.framework.dao.PlatformOrdersDao.getItemById"/>
+	</resultMap>
+
+	<insert id="add" useGeneratedKeys="false">
+        INSERT INTO t_favorite (id, uid, content_type, content_id, create_time)
+        VALUES (#{id}, #{uid}, #{contentType}, #{contentId}, NOW())
+    </insert>
+
+	<delete id="delete">
+        DELETE FROM t_favorite WHERE id = #{id}
+    </delete>
+
+	<select id="find" resultType="FavoriteItem">
+        SELECT * FROM t_favorite WHERE id = #{id}
+    </select>
+	<select id="getItemByContentId" resultType="FavoriteItem">
+        SELECT * FROM t_favorite WHERE uid = #{currentUid} AND content_type = #{contentType} AND content_id = #{contentId}
+    </select>
+	<select id="isExists" resultType="boolean">
+		SELECT COUNT(id)>0 AS is_exists FROM t_favorite WHERE id = #{id} LIMIT 0, 1
+    </select>
+	<select id="isFavorited" resultType="boolean">
+		SELECT COUNT(id)>0 AS is_exists FROM t_favorite WHERE uid = #{uid} AND content_type = #{contentType} AND content_id = #{contentId} LIMIT 0, 1
+    </select>
+	<select id="getFavoriteCount" resultType="int">
+        SELECT COUNT(id) FROM t_favorite WHERE content_type = #{contentType} AND content_id = #{contentId}
+    </select>
+	<select id="search" resultMap="FavoriteSearchResultMap">
+		SELECT f.id, f.uid, f.content_type, f.content_id, f.create_time, ${currentUid} AS current_uid,
+			CASE
+				WHEN f.content_type = 'orders' THEN f.content_id
+				ELSE 0
+			END AS order_id,
+			CASE
+				WHEN f.content_type = 'party' THEN f.content_id
+				ELSE 0
+			END AS party_id,
+			CASE
+				WHEN f.content_type = 'news' THEN f.content_id
+				ELSE 0
+			END AS news_id,
+			CASE
+				WHEN f.content_type = 'forum' THEN f.content_id
+				ELSE 0
+			END AS topic_id,
+			CASE
+				WHEN f.content_type = 'platformOrder' THEN f.content_id
+				ELSE 0
+			END AS platform_order_id
+		FROM t_favorite AS f
+		<include refid="searchCondition"/>
+		<include refid="defaultOrderBy"/>
+		LIMIT #{offset}, #{limit}
+	</select>
+	<select id="count" resultType="long">
+		SELECT COUNT(DISTINCT f.id)
+		FROM t_favorite AS f
+		<include refid="searchCondition"/>
+	</select>
+
+	<sql id="searchCondition">
+		<trim prefix="WHERE" prefixOverrides="AND|OR" suffixOverrides="AND|OR">
+			<if test="contentType != null and contentType.value > 0">AND f.content_type = #{contentType}</if>
+
+			AND f.uid = #{currentUid}
+		</trim>
+	</sql>
+	<sql id="defaultOrderBy">
+		<trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+			<if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+				<foreach collection="sortFieldSet" item="field">
+					<if test="field.sortType != null and field.sortType.value > 0">
+						${field.value} ${field.sortType.direction},
+					</if>
+				</foreach>
+			</if>
+			f.create_time DESC
+		</trim>
+	</sql>
+</mapper>

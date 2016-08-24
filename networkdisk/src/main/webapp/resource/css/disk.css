@@ -1,0 +1,89 @@
+body{
+	font-size:16px;
+}
+#wrap{
+	min-width:1000px;
+	max-width:2000px;
+	
+}
+#sky {
+	padding:8px 0;
+	height:30px;
+	line-height:40px;
+	width:100%;
+}
+
+#cloud span{padding-right:10px;}
+#cloud{float:right;color:white;padding-right:30px;}
+#ground{text-align:center;}
+#main{width:100%;position:relative;padding-top:30px;}
+#left {
+	position:absolute;
+	height: 800px;
+	width: 296px;
+	color:white;
+	font-size:16px;
+}
+#right {
+	height: 800px;
+	margin-left: 296px;
+	overflow:hidden;
+}
+
+#user_info,#setting,#other,#netdisk,#dir_tree {
+	float: left;
+	margin-bottom: 4px;
+}
+#other{margin-left:4px;}
+#user_info,#setting,#other,#netdisk {
+	height: 120px;
+}
+
+#setting {
+	width: 144px;
+	background:url("../img/setting.png") no-repeat 33px 5px;
+}
+
+#other {
+	width: 144px;
+	background:url("../img/smile.png") no-repeat 33px 5px;
+	margin-right: 4px;
+}
+#setting,#other{text-decoration:none;color:white;text-align:center;}
+#setting span,#other span{
+	margin-top:90px;
+	display:block;
+}
+#netdisk {
+	text-align:center;
+}
+
+#dir_tree {
+	height: 428px;
+	overflow:auto;
+}
+#user_info,#netdisk,#dir_tree {
+	width: 292px;
+}
+
+#portrait img {
+	height: 114px;
+	width: 114px;
+	border: 1px #00B945 solid;
+	padding: 2px;
+}
+#portrait,#user_detail {
+	float: left;
+}
+#user_detail{
+	padding:0 7px;
+}
+#user_detail #name{
+	width:140px;
+	margin:15px 0;
+	overflow:hidden;
+    white-space: nowrap; 
+    text-overflow: ellipsis;
+}
+.gender_01{background:url(../img/gender.png) no-repeat 0 6px;}
+.gender_11{background:url(../img/gender.png) no-repeat 20px 0;}

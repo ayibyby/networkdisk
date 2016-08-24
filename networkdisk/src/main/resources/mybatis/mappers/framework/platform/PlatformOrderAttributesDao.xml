@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.PlatformOrderAttributesDao">
+    <insert id="upsert">
+        INSERT INTO t_platform_order_attr (order_id, xgroup, xkey, xvalue)
+        VALUES (#{orderId}, #{xgroup}, #{xkey}, #{xvalue})
+        ON DUPLICATE KEY UPDATE
+        <trim prefixOverrides="," suffixOverrides=",">
+            xvalue = #{xvalue}
+        </trim>
+    </insert>
+</mapper>

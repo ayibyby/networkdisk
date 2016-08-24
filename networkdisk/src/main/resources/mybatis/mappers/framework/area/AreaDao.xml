@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.AreaDao">
+    <resultMap id="provinceResultMap" type="ChinaProvince">
+        <constructor>
+            <idArg column="code" javaType="string"/>
+            <arg column="name" javaType="string"/>
+            <arg column="pinyin" javaType="string"/>
+            <arg column="jianpin" javaType="string"/>
+            <arg column="division_regions" javaType="cn.rongyiju.framework.model.area.ChinaDivisionRegions"/>
+            <arg column="short_name" javaType="string"/>
+            <arg column="short_pinyin" javaType="string"/>
+            <arg column="kind" javaType="cn.rongyiju.framework.model.area.ChinaProvinceKinds"/>
+        </constructor>
+        <!--<association property="cities" javaType="java.util.ArrayList" column="code" select="findCitiesByProvinceCode"/>-->
+    </resultMap>
+
+    <resultMap id="cityResultMap" type="ChinaCity">
+        <constructor>
+            <idArg column="code" javaType="string"/>
+            <arg column="name" javaType="string"/>
+            <arg column="pinyin" javaType="string"/>
+            <arg column="jianpin" javaType="string"/>
+            <arg column="division_regions" javaType="cn.rongyiju.framework.model.area.ChinaDivisionRegions"/>
+            <arg column="province_code" javaType="string"/>
+            <arg column="post_code" javaType="string"/>
+            <arg column="area_code" javaType="string"/>
+            <arg column="kind" javaType="cn.rongyiju.framework.model.area.ChinaCityKinds"/>
+        </constructor>
+        <!--<association property="districts" javaType="java.util.ArrayList" column="code" select="findDistrictsByCityCode"/>-->
+    </resultMap>
+
+    <resultMap id="districtsResultMap" type="ChinaDistrict">
+        <constructor>
+            <idArg column="code" javaType="string"/>
+            <arg column="name" javaType="string"/>
+            <arg column="pinyin" javaType="string"/>
+            <arg column="jianpin" javaType="string"/>
+            <arg column="division_regions" javaType="cn.rongyiju.framework.model.area.ChinaDivisionRegions"/>
+            <arg column="province_code" javaType="string"/>
+            <arg column="city_code" javaType="string"/>
+            <arg column="post_code" javaType="string"/>
+            <arg column="area_code" javaType="string"/>
+            <arg column="kind" javaType="cn.rongyiju.framework.model.area.ChinaDistrictKinds"/>
+        </constructor>
+    </resultMap>
+    <select id="getAllProvinces" resultType="ChinaProvince" resultMap="provinceResultMap">
+        SELECT * FROM t_ad_province ORDER BY `code` ASC
+    </select>
+    <select id="getAllCities" resultType="ChinaCity" resultMap="cityResultMap">
+        SELECT * FROM t_ad_city ORDER BY `code` ASC
+    </select>
+    <select id="findCitiesByProvinceCode" resultType="ChinaCity" resultMap="cityResultMap">
+        SELECT * FROM t_ad_city WHERE province_code = #{provinceCode} ORDER BY `code` ASC
+    </select>
+    <select id="getAllDistricts" resultType="ChinaDistrict" resultMap="districtsResultMap">
+        SELECT * FROM t_ad_district ORDER BY `code` ASC
+    </select>
+    <select id="findDistrictsByCityCode" resultType="ChinaDistrict" resultMap="districtsResultMap">
+        SELECT * FROM t_ad_district WHERE city_code = #{cityCode} ORDER BY `code` ASC
+    </select>
+</mapper>

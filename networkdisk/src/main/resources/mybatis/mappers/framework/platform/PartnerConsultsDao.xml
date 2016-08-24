@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.PartnerConsultsDao">
+    <insert id="add">
+        INSERT INTO t_platform_partner_consult (id, user_id, partner_id, loan_category, content, status, create_time)
+        VALUES (#{id}, #{uid}, #{partnerId}, #{loanCategory}, #{content}, #{status}, NOW());
+    </insert>
+
+    <select id="isExists" resultType="java.lang.Boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_platform_partner_consult WHERE id = #{id} LIMIT 0, 1
+    </select>
+</mapper>

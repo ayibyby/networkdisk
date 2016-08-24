@@ -1,0 +1,12 @@
+.input_tip{
+	font-size:16px;
+	height:16px;
+	padding:4px;
+	padding-left:23px;
+	transition: all 0.3s ease 0s;
+    -webkit-transition: all 0.3s ease 0s;
+}
+.focus_tip{color:#FF6600;background:url(tip.png) no-repeat 0 6px;}
+.right_tip{color:#009828;background:url(tip.png) no-repeat 0 -20px;}
+.error_tip{color:red;background:url(tip.png) no-repeat 0 -48px;}
+.ajax_checking_tip{color:#009828;background:url(loading.gif) no-repeat 0 8px;}

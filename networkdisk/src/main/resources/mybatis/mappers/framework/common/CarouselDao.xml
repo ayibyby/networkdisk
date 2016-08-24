@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.CarouselDao">
+    <select id="search" resultType="CarouselSearchResult">
+        SELECT *
+        FROM t_carousel
+        WHERE status = 'publish' AND is_delete = 0
+        <if test="location != null and !location.isEmpty()">AND location = #{location}</if>
+        <if test="category != null and !category.isEmpty()">AND category = #{category}</if>
+        AND ((activation_date IS NULL AND expiration_date IS NULL) OR (NOW() BETWEEN activation_date AND expiration_date))
+        ORDER BY `order` DESC
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(id)
+        FROM t_carousel
+        WHERE status = 'publish' AND is_delete = 0
+        <if test="location != null and !location.isEmpty()">AND location = #{location}</if>
+        <if test="category != null and !category.isEmpty()">AND category = #{category}</if>
+        AND ((activation_date IS NULL AND expiration_date IS NULL) OR (NOW() BETWEEN activation_date AND expiration_date))
+    </select>
+</mapper>

@@ -1,0 +1,154 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+    	<title>hao</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <script type="text/javascript" src="../js/jquery-1.9.1.min.js"></script>
+        <script type="text/javascript" src="checkInput.js"></script>
+    </head>
+    <style>
+    	*{outline:none;font-family: "微软雅黑"}
+		form dt{width:80px;float:left;line-height:30px;text-align:right;}
+		form dt,form dd{padding:5px 3px;}
+		
+		input,textarea{
+			width:200px;
+			padding:2px 3px;
+			font-size:20px;
+			vertical-align:text-top;
+			border:1px #CDE6C7 solid;
+			padding-right:27px;
+			transition: all 0.3s ease 0s;
+			background:url(tip.png) no-repeat right 40px;
+	        -webkit-transition: all 0.3s ease 0s;
+		}
+		
+		.focus_input{
+			background:url(tip.png) no-repeat right 3px;
+		}
+		.right_input{
+			background:url(tip.png) no-repeat right -31px;
+			background-color:#9BDF70;
+		}
+		.error_input{
+			background:url(tip.png) no-repeat right -68px;
+			box-shadow:1px 1px 15px rgba(255,167,155,0.8);
+			border-color:rgba(255,167,155,0.8);
+		}
+		.ajax_checking_input{
+			background:url(loading.gif) no-repeat right 8px;
+		}
+	
+		.input_tip{
+			letter-spacing:1px;
+			text-align:center;
+			display:inline-block;
+			white-space: nowrap;
+			overflow:hidden;
+		}
+		.focus_tip{color:#FF6600;background:#E6FFE6;}
+		.error_tip{color:#FF0000;background:#FFF2E9;}
+		.ajax_checking_tip{color:#009828;background:#FF6600;}
+		
+		
+    </style>
+    <body>
+    	<!-- 静态表单演示 -->
+    	<form id="check_form" method="post">
+    		<dl>
+    			<dt>电子邮件：</dt><dd><input type="text" name="email"/></dd>
+	    		<dt>密码：</dt><dd><input type="password" name="pwd"/></dd>
+	    		<dt>确认密码：</dt><dd><input type="password" name="pwd1"/></dd>
+	    		<dt>年龄：</dt><dd><input type="text" name="age"/></dd>
+	    		<dt>自介：</dt><dd><textarea name="self"> </textarea></dd>
+	    		<dt> </dt><dd><button type="submit">提交</button></dd>
+	    	</dl>
+    	</form>
+    	
+    	<!--动态表单演示-->
+    	<button id="create_form1">创建表单1</button>
+    	<button id="create_form2">创建表单2</button>
+    	<div id="form1"> </div>
+    	<div id="form2"> </div>
+    </body>
+    	<script>
+    		var form1 = "<form action='here'>"+
+					    	"<dl>"+
+					    		"<dt>电子邮件：</dt><dd><input type='text' name='email'/></dd>"+
+					    		"<dt>密码：</dt><dd><input type='password' name='pwd'/></dd>"+
+					    		"<dt>确认密码：</dt><dd><input type='password' name='pwd1'/></dd>"+
+					    		"<dt>年龄：</dt><dd><input type='text' name='age'/></dd>"+
+					    		"<dt></dt><dd><button type='submit'>提交</button></dd>"+
+					    	"</dl>"+
+				       	"</form>";
+				       	
+			var form2 = "<form action='there'>"+
+					    	"<dl>"+
+					    		"<dt>用户名：</dt><dd><input type='text' name='name'/></dd>"+
+					    		"<dt>密码：</dt><dd><input type='text' name='pwd'/></dd>"+
+					    		"<dt></dt><dd><button type='submit'>提交</button></dd>"+
+					    	"</dl>"+
+				       	"</form>"
+				       	
+			$("#create_form1").click(function(){$("#form1").html(form1);});
+			$("#create_form2").click(function(){$("#form2").html(form2);});
+			
+			var rules = {
+				"email"    	: [/^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+((\.[a-zA-Z0-9_-]{2,3}){1,2})$/,"邮箱格式不对"],
+				"username" 	: [/^[#]/,"不能这样写"],
+				"password" 	: [/(lw)$/,"我要发火了"],
+				"eng"	   	: [/^[A-Za-z]+$/,"只能输入英文"],
+				"chn" 		: [/^[\u0391-\uFFE5]+$/,"只能输入汉字"],
+				"len4"		: [/^\s*[\s\S]{4,50}\s*$/,"密码需要超过4位"]
+			}
+	        var itms1 = [{ 
+					name:"email",	
+					type:"email"
+				},{ 
+					name:"pwd",	
+					type:"len4"
+				},{ 
+					name:"pwd1",	
+					type:'eq',		
+					errorMsg:'两次输入密码不匹配',	
+					eqto:'pwd'
+				},{ 
+					name:"age",	
+					between:[18,78],
+					focusMsg:'18< >78',
+					errorMsg:'18< >78'
+				},{ 
+					name:"self",	
+					type:"chn",
+					errorMsg:"请输入中文昵称" 
+				}
+			];
+			
+		var itms2 = [{
+			name:"name",	
+			type:"chn",
+			errorMsg:"请输入中文昵称",
+			ajax:{
+					url:"http://www.job.com/home/ajax",
+					errorMsg:"用户已存在",
+					successMsg:"用户名可以注册！"
+				}
+			},{
+				name:"pwd",	
+				type:'len4',
+				errorMsg:"输入英文"				
+			}];
+		
+	    $("#form1,#check_form").checkInput({
+	        items:itms1,
+	        rules:rules,
+	        beforeSubmit:function(e,result,form){
+	        	e.preventDefault();
+	        }
+	   	});
+	   	
+	   	$("#form2").checkInput({
+	   		items:itms2
+	   	});
+    </script>
+</html>

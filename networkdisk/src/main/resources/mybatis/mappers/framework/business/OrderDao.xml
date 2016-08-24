@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.OrderDao">
+
+    <resultMap id="OrderSearchResultMap" type="OrderSearchResult">
+        <id property="id" column="o_id"/>
+
+        <result property="currentUid" column="current_uid"/>
+
+        <association property="takeOrderCount" column="o_id" select="getTakeOrderCountByOrderId"/>
+        <association property="initiator" column="{uid=o_uid, currentUid=current_uid}" select="cn.rongyiju.framework.dao.UserDao.find"/>
+        <association property="orderTakers" column="o_order_id" select="getOrderTakers"/>
+        <!--<association property="favoriteCount" column="{contentType=content_type, contentId=id}" select="cn.rongyiju.framework.dao.FavoriteDao.getFavoriteCount"/>-->
+        <!--<association property="praiseCount" column="{contentType=content_type, contentId=o_id}" select="cn.rongyiju.framework.dao.PraiseDao.getPraiseCount"/>-->
+        <association property="isFavorited" column="{contentType=content_type, contentId=id, uid=current_uid}" select="cn.rongyiju.framework.dao.FavoriteDao.isFavorited"/>
+        <association property="isPraised" column="{contentType=content_type, contentId=id, uid=current_uid}" select="cn.rongyiju.framework.dao.PraiseDao.isPraised"/>
+    </resultMap>
+
+    <insert id="add" parameterType="Order">
+		INSERT INTO t_order (id, uid, title, category, is_anonymous, description, province, city, district, amount, loan_days, payment_month, status, create_uid, create_time)
+		VALUES (#{id}, #{uid}, #{title}, #{category}, #{isAnonymous}, #{description}, #{province}, #{city}, #{district}, #{amount}, #{loanDays}, #{paymentMonth}, #{status}, #{createUid}, #{createTime})
+	</insert>
+    <insert id="takeOrder" parameterType="TakeOrderRecord" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+        INSERT INTO t_order_user_relation (order_id, uid, msg, update_time, status)
+        VALUES (#{orderId}, #{uid}, #{msg}, #{updateTime}, #{status})
+        ON DUPLICATE KEY UPDATE
+        <trim prefixOverrides="," suffixOverrides=",">
+            msg = #{msg},
+
+            status = #{status},
+
+            update_time = NOW()
+        </trim>
+    </insert>
+
+    <update id="updateOrderStatus">
+		UPDATE t_order
+		SET status=#{status}
+		WHERE id = #{orderId};
+	</update>
+    <update id="updateOrderTakerStatus">
+		UPDATE t_order_user_relation
+		SET status = #{status}
+		WHERE id = #{id}
+	</update>
+    <update id="updateOtherOrderTakerStatus">
+		UPDATE t_order_user_relation
+		SET status = #{status}
+		WHERE order_id = #{orderId} AND id != #{excludeId}
+	</update>
+    <update id="updateTakeOrderRecord">
+        UPDATE t_order_user_relation
+        <set>
+            comment=#{comment},
+            status=#{status},
+        </set>
+        WHERE id = #{id}
+    </update>
+    <update id="modify">
+        UPDATE t_order
+        <set>
+            title = #{title},
+            category = #{category},
+            is_anonymous = #{isAnonymous},
+            description = #{description},
+            province = #{province},
+            city = #{city},
+            district = #{district},
+            amount = #{amount},
+            loan_days = #{loanDays},
+            payment_month = #{paymentMonth},
+        </set>
+        WHERE id = #{id}
+    </update>
+    <delete id="cancelTakeOrder">
+		UPDATE t_order_user_relation
+		SET status = 'cancelled'
+		WHERE order_id = #{orderId} AND uid = #{uid}
+	</delete>
+
+    <select id="find" resultType="OrderSearchResult" resultMap="OrderSearchResultMap">
+        SELECT o.*, o.id AS o_id, o.uid AS o_uid, o.id AS o_order_id, ${currentUid} AS current_uid, 'orders' AS content_type,
+        (SELECT COUNT(pr.id) FROM t_praise AS pr WHERE content_type = 'orders' AND content_id = o.id) AS praise_count,
+        (SELECT COUNT(f.id) FROM t_favorite AS f WHERE content_type = 'orders' AND content_id = o.id) AS favorite_count
+
+        <if test="currentUid > 0">
+            , CASE WHEN fx.display_name IS NULL OR fx.display_name = '' THEN u.name
+            ELSE fx.display_name
+            END AS username,
+            (SELECT COUNT(x.id)>0 FROM t_order_user_relation AS x WHERE x.order_id = o.id AND x.uid = #{currentUid} AND
+            (x.status = 'taking' OR x.status = 'discussing' OR x.status = 'success' OR x.status = 'failed') LIMIT 0, 1) AS
+            is_taken,
+            (SELECT COUNT(y.id)>0 FROM t_order_user_relation AS y WHERE y.order_id = o.id AND y.uid = #{currentUid} AND y.status = 'discussing' LIMIT 0, 1) AS is_discussing,
+            (SELECT COUNT(z.id)>0 FROM t_order_complain AS z WHERE z.order_id = o.id AND z.uid = #{currentUid} LIMIT 0, 1) AS is_complained
+        </if>
+
+        FROM t_order AS o
+        INNER JOIN t_user AS u ON o.uid = u.id
+
+        <if test="currentUid > 0">
+            LEFT JOIN t_user_follower AS fx ON fx.uid = o.uid AND fx.follower_id = #{currentUid}
+        </if>
+
+        WHERE o.id=#{id} AND o.is_delete = 0
+    </select>
+    <select id="findAllById" resultType="OrderSearchResult" resultMap="OrderSearchResultMap">
+        SELECT o.*, o.id AS o_id, o.uid AS o_uid, o.id AS o_order_id, ${currentUid} AS current_uid, 'orders' AS content_type,,
+        (SELECT COUNT(pr.id) FROM t_praise AS pr WHERE content_type = 'orders' AND content_id = o.id) AS praise_count,
+        (SELECT COUNT(f.id) FROM t_favorite AS f WHERE content_type = 'orders' AND content_id = o.id) AS favorite_count,
+        CASE WHEN fx.display_name IS NULL OR fx.display_name = '' THEN u.name
+        ELSE fx.display_name
+        END AS username,
+        (SELECT COUNT(x.id)>0 FROM t_order_user_relation AS x WHERE x.order_id = o.id AND x.uid = #{currentUid} AND
+        (x.status = 'taking' OR x.status = 'discussing' OR x.status = 'success' OR x.status = 'failed') LIMIT 0, 1) AS
+        is_taken,
+        (SELECT COUNT(y.id)>0 FROM t_order_user_relation AS y WHERE y.order_id = o.id AND y.uid = #{currentUid} AND
+        y.status = 'discussing' LIMIT 0, 1) AS is_discussing,
+        (SELECT COUNT(z.id)>0 FROM t_order_complain AS z WHERE z.order_id = o.id AND z.uid = #{currentUid} LIMIT 0, 1)
+        AS is_complained
+        FROM t_order AS o
+        INNER JOIN t_user AS u ON o.uid = u.id
+        LEFT JOIN t_user_follower AS fx ON fx.uid = o.uid AND fx.follower_id = #{currentUid}
+        WHERE o.id IN
+        <foreach item="item" index="index" collection="id" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        ORDER BY update_time DESC, id DESC
+    </select>
+    <select id="isExists" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_exists FROM t_order WHERE id = #{orderId} LIMIT 0, 1
+    </select>
+    <select id="isTaken" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_taken
+        FROM t_order_user_relation
+        WHERE order_id = #{orderId} AND uid = #{uid} AND (status = 'taking' OR status = 'discussing' OR status =
+        'success' OR status = 'failed')
+        LIMIT 0, 1
+    </select>
+    <select id="isDiscussing" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_discussing FROM t_order_user_relation WHERE order_id = #{orderId} AND uid = #{uid} AND status = 'discussing' LIMIT 0, 1
+    </select>
+    <select id="isComplained" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_complained FROM t_order_complain WHERE order_id = #{orderId} AND uid = #{uid} LIMIT 0, 1
+    </select>
+    <select id="isInitiator" resultType="boolean">
+        SELECT COUNT(id)>0 AS is_initiator FROM t_order WHERE id = #{orderId} AND uid = #{uid} LIMIT 0, 1
+    </select>
+    <select id="getOrderTakers" resultType="OrderTaker">
+        SELECT r.uid, u.name, u.nickname, u.avatar, u.avatar_thumbnail, u.gender, u.mobile, r.update_time AS takeTime, u.score,
+        r.msg, r.status,
+        (SELECT COUNT(z.id)>0 FROM t_order_taker_complain AS z WHERE z.order_id = o.id AND z.taker_uid = u.id LIMIT 0,
+        1) AS is_complained
+        FROM t_user AS u
+        INNER JOIN t_order_user_relation AS r ON r.uid = u.id
+        INNER JOIN t_order AS o ON r.order_id = o.id
+        WHERE o.id = #{orderId} AND (r.status = 'taking' OR r.status = 'discussing' OR r.status = 'success' OR r.status
+        = 'failed')
+        ORDER BY takeTime ASC
+    </select>
+    <select id="getOrderCities" resultType="SearchFilterCityItem">
+        SELECT c.`code`, c.`name`, Count(c.code) AS `order`
+        FROM t_ad_city AS c
+        INNER JOIN t_order AS o ON o.city = c.`code`
+        WHERE o.is_delete = 0
+        GROUP BY c.`code`, c.`name`
+        ORDER BY `order` DESC
+    </select>
+    <select id="findTakeOrderRecord" resultType="TakeOrderRecord">
+        SELECT * FROM t_order_user_relation WHERE order_id = #{orderId} AND uid = #{takerUid} LIMIT 0, 1
+    </select>
+    <select id="getInitiatorInfo" resultType="OrderInitiator">
+        SELECT u.id AS uid, u.name, u.nickname, u.mobile, u.email, u.is_email_auth, u.gender, u.birthday, u.province, u.city, u.district, u.company, u.company_address,
+        u.avatar, u.avatar_thumbnail, u.friend_count, u.follow_count, u.lat, u.lng, u.score, u.privacy_option, u.stealth_option,
+        (SELECT COUNT(id) FROM t_order WHERE uid = o.uid) AS orderCount,
+        (SELECT COUNT(id) FROM t_order_user_relation WHERE uid = o.uid) AS takeOrderCount
+        FROM t_user AS u
+        INNER JOIN t_order AS o ON o.uid = u.id
+        WHERE o.id = #{orderId}
+    </select>
+    <select id="getOrderCount" resultType="long">
+        SELECT COUNT(id) FROM t_order WHERE uid = #{uid}
+    </select>
+    <select id="getTakeOrderCount" resultType="long">
+        SELECT COUNT(id) FROM t_order_user_relation WHERE uid = #{uid} AND (status = 'taking' OR status = 'discussing'
+        OR status = 'success' OR status = 'failed')
+    </select>
+    <select id="getTakeOrderCountByOrderId" resultType="long">
+        SELECT COUNT(id) FROM t_order_user_relation WHERE order_id = #{orderId} AND (status = 'taking' OR status =
+        'discussing' OR status = 'success' OR status = 'failed')
+    </select>
+
+    <select id="search" resultType="OrderSearchResult" resultMap="OrderSearchResultMap">
+        SELECT DISTINCT o.*, o.id AS o_id, o.uid AS o_uid, ${currentUid} AS current_uid, 'orders' AS content_type,
+        (SELECT COUNT(pr.id) FROM t_praise AS pr WHERE content_type = 'orders' AND content_id = o.id) AS praise_count,
+        (SELECT COUNT(f.id) FROM t_favorite AS f WHERE content_type = 'orders' AND content_id = o.id) AS favorite_count,
+        CASE WHEN fx.display_name IS NULL OR fx.display_name = '' THEN u.name
+        ELSE fx.display_name
+        END AS username,
+        CASE o.status
+        WHEN 'available' THEN 0
+        WHEN 'discussing' THEN 0
+        WHEN 'finished' THEN 2
+        WHEN 'cancelled' THEN 3
+        WHEN 'freezed' THEN 4
+        ELSE 99
+        END AS status_value,
+        (SELECT COUNT(x.id)>0 FROM t_order_user_relation AS x WHERE x.order_id = o.id AND x.uid = #{currentUid} AND (x.status = 'taking' OR x.status = 'discussing' OR x.status = 'success' OR x.status = 'failed') LIMIT 0, 1) AS is_taken,
+        (SELECT COUNT(y.id)>0 FROM t_order_user_relation AS y WHERE y.order_id = o.id AND y.uid = #{currentUid} AND y.status = 'discussing' LIMIT 0, 1) AS is_discussing,
+        (SELECT COUNT(z.id)>0 FROM t_order_complain AS z WHERE z.order_id = o.id AND z.uid = #{currentUid} LIMIT 0, 1) AS is_complained
+
+        <if test="takerUid > 0">, r.`status` AS take_status</if>
+        FROM t_order AS o
+        INNER JOIN t_user AS u ON o.uid = u.id
+        LEFT JOIN t_order_user_relation AS r ON r.order_id = o.id
+        LEFT JOIN t_user_follower AS fx ON fx.uid = o.uid AND fx.follower_id = #{currentUid}
+        <include refid="searchCondition"/>
+        <include refid="defaultOrderBy"/>
+        LIMIT #{offset}, #{limit}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(DISTINCT o.id)
+        FROM t_order AS o
+        INNER JOIN t_user AS u ON o.uid = u.id
+        LEFT JOIN t_order_user_relation AS r ON r.order_id = o.id
+        <include refid="searchCondition"/>
+    </select>
+    <select id="getTodayCount" resultType="long">
+        SELECT COUNT(DISTINCT o.id)
+        FROM t_order AS o
+        WHERE o.uid = #{currentUid} AND to_days(o.create_time) = to_days(now())
+    </select>
+
+    <sql id="searchCondition">
+        <trim prefix="WHERE" prefixOverrides="AND|OR" suffixOverrides="AND|OR">
+            <if test="category != null and category.value > 0">AND o.category = #{category}</if>
+
+            <!--<if test="province != null">AND (o.province = #{province} OR o.city = #{province} OR o.district = #{province})</if>-->
+            <if test="city != null">AND (o.province = #{city} OR o.city = #{city} OR o.district = #{city})</if>
+            <!--<if test="district != null">AND (o.province = #{district} OR o.city = #{district} OR o.district = #{district})</if>-->
+
+            <if test="minAmount >= 0 and maxAmount > 0 and maxAmount >= minAmount">AND (o.amount BETWEEN #{minAmount}
+                AND #{maxAmount})
+            </if>
+
+            <if test="1 > initiatorUid and 1 > takerUid">
+                <if test="status == null or status.value == 0">AND (o.status = 'available' OR o.status = 'discussing' OR o.status = 'finished')</if>
+                <if test="status != null and status.value != 0">AND o.status = #{status}</if>
+            </if>
+            <if test="initiatorUid > 0">AND o.uid = #{initiatorUid}</if>
+            <if test="takerUid > 0">AND r.uid = #{takerUid}</if>
+
+            <if test="keywords != null and !keywords.isEmpty()">
+                AND
+                <foreach item="item" index="index" collection="keywords" open="(" separator=" OR " close=")">
+                    (
+                    o.title LIKE CONCAT('%', #{item}, '%')
+                    OR o.description LIKE CONCAT('%', #{item}, '%')
+                    OR u.name LIKE CONCAT('%', #{item}, '%')
+                    )
+                </foreach>
+            </if>
+
+            AND o.is_delete = 0
+        </trim>
+    </sql>
+    <sql id="defaultOrderBy">
+        <trim prefix="ORDER BY" prefixOverrides="," suffixOverrides=",">
+            status_value ASC,
+            <if test="sortFieldSet != null and !sortFieldSet.isEmpty()">
+                <foreach collection="sortFieldSet" item="field">
+                    <if test="field.sortType != null and field.sortType.value > 0">
+                        ${field.value} ${field.sortType.direction},
+                    </if>
+                </foreach>
+            </if>
+            o.create_time DESC,
+            o.id DESC
+        </trim>
+    </sql>
+
+</mapper>

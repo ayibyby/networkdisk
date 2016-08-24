@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.rongyiju.framework.dao.PlatformFinancialDao">
+    <insert id="add">
+        INSERT INTO t_finance_platform_balance (sequence_number, event_time, category, related_type, related_id, amount, cash_balance, balance, note, is_delete, create_time)
+        VALUES (#{sequenceNumber}, #{event_time}, #{category}, #{relatedType}, #{relatedId}, #{amount}, #{cashBalance}, #{balance}, #{note}, 0, NOW())
+    </insert>
+    <update id="updatePlatformExpenses">
+        UPDATE t_platform_finance
+        SET
+            total_balance = total_balance - #{amount},
+            total_expense = total_expense + #{amount},
+            available_balance = available_balance -  #{amount};
+    </update>
+    <select id="getLastSequenceNumber" resultType="java.lang.String">
+        SELECT MAX(sequence_number)
+        FROM t_finance_platform_balance
+        WHERE create_time >= DATE(NOW())
+    </select>
+    <select id="find" resultType="cn.rongyiju.framework.model.finance.PlatformFinancial">
+        SELECT * FROM t_finance_platform_balance LIMIT 0, 1;
+    </select>
+</mapper>
